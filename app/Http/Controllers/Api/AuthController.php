@@ -60,18 +60,20 @@ class AuthController extends Controller
             ]);
         }
 
-        return DB::transaction(function () use ($data, $otpRow) {
+        $name = $data['name'] ?? 'Shop Owner';
+
+        return DB::transaction(function () use ($data, $otpRow, $name) {
             if ($otpRow) {
                 $otpRow->update(['used_at' => now()]);
             }
 
             $user = User::firstOrCreate(
                 ['phone' => $data['phone']],
-                ['name' => $data['name'] ?: 'Shop Owner']
+                ['name' => $name]
             );
 
-            if (!empty($data['name']) && $user->name !== $data['name']) {
-                $user->update(['name' => $data['name']]);
+            if (!empty($name) && $user->name !== $name) {
+                $user->update(['name' => $name]);
             }
 
             $token = $user->createToken('flutter-owner-app')->plainTextToken;
