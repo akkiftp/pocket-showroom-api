@@ -23,6 +23,8 @@ ENV APP_KEY=base64:OMXbpxjceLqOkSB9haO2huC+iBR4V6/wi0EvwlE85UY=
 ENV APP_DEBUG=true
 ENV DB_CONNECTION=sqlite
 ENV DB_DATABASE=/var/www/database/database.sqlite
+ENV CACHE_STORE=file
+ENV SESSION_DRIVER=file
 
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
 RUN touch /var/www/database/database.sqlite
