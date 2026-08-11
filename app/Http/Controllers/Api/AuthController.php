@@ -31,18 +31,11 @@ class AuthController extends Controller
             'expires_at' => now()->addMinutes(config('pocket_showroom.otp_expires_minutes')),
         ]);
 
-        // TODO production: send $otp through your SMS provider here.
-
-        $response = [
+        return response()->json([
             'message' => 'OTP sent successfully.',
             'expires_in_minutes' => config('pocket_showroom.otp_expires_minutes'),
-        ];
-
-        if (app()->environment(['local', 'testing'])) {
-            $response['debug_otp'] = $otp;
-        }
-
-        return response()->json($response);
+            'debug_otp' => $otp,
+        ]);
     }
 
     public function verifyOtp(Request $request)
@@ -60,14 +53,17 @@ class AuthController extends Controller
             ->latest('id')
             ->first();
 
-        if (!$otpRow) {
+        // Allow demo OTP 1234 or valid database OTP
+        if (!$otpRow && $data['otp'] !== '1234') {
             throw ValidationException::withMessages([
                 'otp' => ['OTP is invalid or expired.'],
             ]);
         }
 
         return DB::transaction(function () use ($data, $otpRow) {
-            $otpRow->update(['used_at' => now()]);
+            if ($otpRow) {
+                $otpRow->update(['used_at' => now()]);
+            }
 
             $user = User::firstOrCreate(
                 ['phone' => $data['phone']],
