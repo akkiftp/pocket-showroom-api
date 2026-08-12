@@ -1,10 +1,10 @@
 <?php
 
-$dbConn = env('DB_CONNECTION', 'sqlite');
+// Force SQLite as default unless a real remote DATABASE_URL is configured
+$dbConn = 'sqlite';
 
-// Automatically fallback to SQLite if remote Postgres is not configured
-if ($dbConn === 'pgsql' && !env('DATABASE_URL') && (env('DB_HOST') === '127.0.0.1' || !env('DB_HOST'))) {
-    $dbConn = 'sqlite';
+if (env('DATABASE_URL')) {
+    $dbConn = 'pgsql';
 }
 
 return [
