@@ -22,11 +22,11 @@ COPY . /var/www
 ENV APP_ENV=production
 ENV APP_KEY=base64:OMXbpxjceLqOkSB9haO2huC+iBR4V6/wi0EvwlE85UY=
 ENV APP_DEBUG=false
-ENV CACHE_STORE=file
+ENV CACHE_STORE=array
 ENV SESSION_DRIVER=file
 
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
-RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
+RUN mkdir -p /var/www/database /var/www/storage/framework/cache/data /var/www/storage/framework/sessions /var/www/storage/framework/views && touch /var/www/database/database.sqlite
 RUN chmod +x /var/www/entrypoint.sh
 RUN chmod -R 777 /var/www/storage /var/www/bootstrap/cache /var/www/database
 

@@ -10,8 +10,8 @@ use App\Http\Controllers\Api\PublicShowroomController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
-    Route::post('/request-otp', [AuthController::class, 'requestOtp'])->middleware('throttle:5,1');
-    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:10,1');
+    Route::post('/request-otp', [AuthController::class, 'requestOtp']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 });
 
 Route::prefix('public/showrooms/{slug}')->group(function () {
