@@ -60,7 +60,7 @@
             <span class="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-full cursor-pointer shadow-sm">All Products</span>
             @foreach($categories as $cat)
             <span class="bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs px-4 py-2 rounded-full border border-slate-200 cursor-pointer transition shadow-xs">
-                {{ $cat->name }} ({{ $cat->products_count }})
+                {{ $cat->name }}
             </span>
             @endforeach
         </div>
