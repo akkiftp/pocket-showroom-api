@@ -22,6 +22,7 @@ COPY . /var/www
 ENV APP_ENV=production
 ENV APP_KEY=base64:OMXbpxjceLqOkSB9haO2huC+iBR4V6/wi0EvwlE85UY=
 ENV APP_DEBUG=false
+ENV DB_CONNECTION=sqlite
 ENV CACHE_STORE=array
 ENV SESSION_DRIVER=file
 
