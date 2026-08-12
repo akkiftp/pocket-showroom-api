@@ -20,21 +20,27 @@ class PublicShowroomController extends Controller
     {
         $business = $this->business($slug);
 
+        $products = $business->products()
+            ->where('is_active', true)
+            ->where('in_stock', true)
+            ->with(['category:id,name', 'images'])
+            ->orderBy('sort_order')
+            ->latest('id')
+            ->limit(30)
+            ->get();
+
+        $featuredProducts = $products->where('featured', true)->values();
+
         return response()->json([
+            'success' => true,
             'business' => $business,
+            'message' => $products->isEmpty() ? 'This showroom is live, but no products have been published yet.' : 'Showroom loaded successfully.',
             'categories' => $business->categories()
                 ->where('is_active', true)
                 ->withCount(['products' => fn ($q) => $q->where('is_active', true)->where('in_stock', true)])
                 ->get(),
-            'featured_products' => $business->products()
-                ->where('is_active', true)
-                ->where('in_stock', true)
-                ->where('featured', true)
-                ->with(['category:id,name', 'images'])
-                ->orderBy('sort_order')
-                ->latest('id')
-                ->limit(12)
-                ->get(),
+            'products' => $products,
+            'featured_products' => $featuredProducts->isNotEmpty() ? $featuredProducts : $products->take(12),
         ]);
     }
 

@@ -11,9 +11,16 @@ use App\Http\Controllers\Api\PublicShowroomController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', function () {
+    return response()->json([
+        'ok' => true,
+        'service' => 'Pocket Showroom API',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
 Route::prefix('auth')->group(function () {
-    Route::post('/request-otp', [AuthController::class, 'requestOtp']);
-    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/firebase-login', [AuthController::class, 'firebaseLogin']);
 });
 
 Route::prefix('public/showrooms/{slug}')->group(function () {

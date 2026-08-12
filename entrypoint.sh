@@ -38,12 +38,10 @@ php artisan config:clear || true
 php artisan route:clear || true
 php artisan storage:link --force || true
 
-# Run database migrations and seeding
+# Run database migrations
 if [ "$RUN_MIGRATIONS" != "false" ]; then
     echo "Running database migrations..."
     php artisan migrate --force || echo "Migration skipped or failed."
-    echo "Seeding database..."
-    php artisan db:seed --force || echo "Seeding skipped."
 fi
 
 echo "Starting Pocket Showroom API server on port ${PORT:-10000}..."
