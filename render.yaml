@@ -4,3 +4,20 @@ services:
     env: docker
     plan: free
     dockerfilePath: ./Dockerfile
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pocket-showroom-db
+          property: connectionString
+
+databases:
+  - name: pocket-showroom-db
+    databaseName: pocket_showroom
+    user: showroom_user
+    plan: free
