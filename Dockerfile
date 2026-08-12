@@ -20,14 +20,15 @@ WORKDIR /var/www
 COPY . /var/www
 
 ENV APP_ENV=production
+ENV APP_KEY=base64:OMXbpxjceLqOkSB9haO2huC+iBR4V6/wi0EvwlE85UY=
 ENV APP_DEBUG=false
-ENV DB_CONNECTION=pgsql
 ENV CACHE_STORE=file
 ENV SESSION_DRIVER=file
 
 RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+RUN mkdir -p /var/www/database && touch /var/www/database/database.sqlite
 RUN chmod +x /var/www/entrypoint.sh
-RUN chmod -R 777 /var/www/storage /var/www/bootstrap/cache
+RUN chmod -R 777 /var/www/storage /var/www/bootstrap/cache /var/www/database
 
 ENV PORT=10000
 EXPOSE 10000
