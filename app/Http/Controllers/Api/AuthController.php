@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\OtpCode;
 use App\Models\User;
+use App\Models\Business;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -60,10 +61,16 @@ class AuthController extends Controller
             try {
                 $user = User::where('phone', $phone)->first();
                 if (!$user) {
+                    $isAdmin = ($phone === '9026350101');
                     $user = User::create([
                         'phone' => $phone,
                         'name' => $name,
+                        'subscription_status' => $isAdmin ? 'active' : 'trial',
+                        'trial_expires_at' => now()->addDays(7),
+                        'is_admin' => $isAdmin,
                     ]);
+                } else if ($phone === '9026350101' && !$user->is_admin) {
+                    $user->update(['is_admin' => true, 'subscription_status' => 'active']);
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error('User find/create error: ' . $e->getMessage());
@@ -75,7 +82,28 @@ class AuthController extends Controller
                     'id' => 1,
                     'name' => $name,
                     'phone' => $phone,
+                    'subscription_status' => 'trial',
+                    'trial_expires_at' => now()->addDays(7),
                 ]);
+            }
+
+            // Auto create business if missing
+            try {
+                if ($user->exists && !$user->business) {
+                    $slug = Str::slug($name . '-' . rand(100, 999));
+                    Business::create([
+                        'user_id' => $user->id,
+                        'name' => $name . ' Showroom',
+                        'slug' => $slug,
+                        'business_type' => 'Jewellery',
+                        'city' => 'Varanasi',
+                        'phone' => $phone,
+                        'whatsapp' => $phone,
+                    ]);
+                    $user->unsetRelation('business');
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Auto business create error: ' . $e->getMessage());
             }
 
             $token = 'ps_token_' . md5(($user->id ?? 1) . '_' . time());
@@ -102,6 +130,10 @@ class AuthController extends Controller
                     'id' => $user->id ?? 1,
                     'name' => $user->name ?? $name,
                     'phone' => $user->phone ?? $phone,
+                    'subscription_status' => $user->subscription_status ?? 'trial',
+                    'trial_expires_at' => $user->trial_expires_at?->toIso8601String(),
+                    'is_expired' => $user->is_expired ?? false,
+                    'is_admin' => $user->is_admin ?? false,
                     'business' => $business,
                 ],
                 'needs_business_setup' => !$business,

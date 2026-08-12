@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\CategoryController;
@@ -7,6 +8,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PublicShowroomController;
+use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -24,6 +26,15 @@ Route::prefix('public/showrooms/{slug}')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    Route::get('/subscription/status', [SubscriptionController::class, 'status']);
+
+    Route::prefix('admin')->group(function () {
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::post('/users/{id}/activate', [AdminController::class, 'activate']);
+        Route::post('/users/{id}/extend-trial', [AdminController::class, 'extendTrial']);
+        Route::post('/users/{id}/block', [AdminController::class, 'block']);
+    });
 
     Route::get('/dashboard', [DashboardController::class, 'index']);
 

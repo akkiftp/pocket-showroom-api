@@ -17,7 +17,7 @@ class PocketShowroomSeeder extends Seeder
         DB::transaction(function () {
             $user = User::firstOrCreate(
                 ['phone' => '9999999999'],
-                ['name' => 'Demo Owner']
+                ['name' => 'Riya Jewels Owner']
             );
 
             $business = Business::firstOrCreate(
@@ -29,7 +29,7 @@ class PocketShowroomSeeder extends Seeder
                     'city' => 'Varanasi',
                     'whatsapp' => '9999999999',
                     'phone' => '9999999999',
-                    'about' => 'Premium jewellery showroom demo.',
+                    'about' => 'Welcome to our official digital showroom. Explore our exclusive collection and place inquiries directly on WhatsApp.',
                 ]
             );
 
@@ -61,7 +61,7 @@ class PocketShowroomSeeder extends Seeder
                         'name' => $name,
                         'price' => $price,
                         'offer_price' => $offer,
-                        'description' => 'Demo product for Pocket Showroom.',
+                        'description' => 'Exclusive handcrafted jewellery collection.',
                         'in_stock' => $stock,
                         'featured' => $featured,
                         'is_active' => true,
