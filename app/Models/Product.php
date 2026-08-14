@@ -48,6 +48,8 @@ class Product extends Model
         return $this->hasMany(ProductImage::class)->orderByDesc('is_primary')->orderBy('sort_order')->orderBy('id');
     }
 
+    public function activityEvents() { return $this->hasMany(ActivityEvent::class); }
+
     public function getSellingPriceAttribute()
     {
         return $this->offer_price ?: $this->price;

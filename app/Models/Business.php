@@ -56,6 +56,11 @@ class Business extends Model
         return $this->hasMany(Inquiry::class);
     }
 
+    public function customerContacts() { return $this->hasMany(CustomerContact::class); }
+    public function visitorSessions() { return $this->hasMany(VisitorSession::class); }
+    public function activityEvents() { return $this->hasMany(ActivityEvent::class); }
+    public function orders() { return $this->hasMany(Order::class); }
+
     public function getLogoUrlAttribute(): ?string
     {
         return $this->logo_path ? asset('storage/'.$this->logo_path) : null;

@@ -21,7 +21,7 @@
 </head>
 <body class="min-h-screen flex flex-col relative pb-24"
       x-data="showroomData()"
-      x-init="initCart()">
+      x-init="initCart(); initTracking()">
 
     <!-- Header -->
     <header class="sticky top-0 z-40 glass-header border-b border-slate-200/80 shadow-xs">
@@ -52,6 +52,7 @@
 
                 @if($business->whatsapp)
                 <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text={{ urlencode('Hi '.$business->name.', I visited your online showroom.') }}"
+                   @click="track('whatsapp_click', null, {placement:'header'})"
                    target="_blank"
                    class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-sm shadow-emerald-600/20">
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
@@ -165,6 +166,7 @@
                             <!-- Buy Now / Inquire -->
                             @if($business->whatsapp)
                             <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text={{ $waText }}"
+                               @click="track('whatsapp_click', {{ $product->id }}, {placement:'product_card'})"
                                target="_blank"
                                class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm shadow-indigo-600/20">
                                 <span>Buy Now</span>
@@ -248,6 +250,11 @@
                         <span class="text-xl text-indigo-600">₹<span x-text="formattedCartTotal"></span></span>
                     </div>
 
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input x-model="customerName" type="text" placeholder="Your name" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
+                        <input x-model="customerPhone" type="tel" placeholder="Mobile number" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
+                    </div>
+                    <p class="text-[10px] text-slate-500">Name/mobile helps the shop owner identify your enquiry. Actual WhatsApp replies stay inside WhatsApp.</p>
                     @if($business->whatsapp)
                     <button @click="sendWhatsAppOrder('{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}', '{{ addslashes($business->name) }}')"
                             :disabled="cart.length === 0"
@@ -281,7 +288,7 @@
                 <div class="grid grid-cols-2 gap-3">
                     <button @click="addToCart(selectedProduct); modalOpen = false" class="py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm border border-slate-200">+ Add to Cart</button>
                     @if($business->whatsapp)
-                    <a :href="'https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text=' + selectedProduct.waText" target="_blank" class="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1 shadow-sm">Buy Now</a>
+                    <a :href="'https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text=' + selectedProduct.waText" @click="track('whatsapp_click', selectedProduct.id, {placement:'product_modal'})" target="_blank" class="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1 shadow-sm">Buy Now</a>
                     @endif
                 </div>
             </div>
@@ -310,12 +317,45 @@
                 toastMessage: '',
                 cart: [],
                 selectedProduct: {},
+                visitorToken: '',
+                trackingUrl: @json(url('/api/public/showrooms/'.$business->slug.'/events')),
+                orderUrl: @json(url('/api/public/showrooms/'.$business->slug.'/orders')),
+                customerName: '',
+                customerPhone: '',
 
                 initCart() {
                     const saved = localStorage.getItem('ps_cart_{{ $business->id }}');
                     if (saved) {
                         try { this.cart = JSON.parse(saved); } catch(e) {}
                     }
+                },
+
+                initTracking() {
+                    const key = 'ps_visitor_{{ $business->id }}';
+                    let token = localStorage.getItem(key);
+                    if (!token) {
+                        token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Math.random().toString(16).slice(2,14).padEnd(12,'0').slice(0,12);
+                        localStorage.setItem(key, token);
+                    }
+                    this.visitorToken = token;
+                    this.track('showroom_view', null, {path: location.pathname});
+                },
+
+                track(eventType, productId = null, metadata = {}) {
+                    const payload = {
+                        event_type: eventType,
+                        visitor_token: this.visitorToken,
+                        product_id: productId || null,
+                        source: 'web',
+                        referrer: document.referrer || null,
+                        metadata: metadata
+                    };
+                    fetch(this.trackingUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type':'application/json','Accept':'application/json'},
+                        body: JSON.stringify(payload),
+                        keepalive: true
+                    }).catch(() => {});
                 },
 
                 saveCart() {
@@ -329,6 +369,7 @@
                 },
 
                 addToCart(product) {
+                    this.track('add_to_cart', product.id, {qty:1});
                     const existing = this.cart.find(i => i.id === product.id);
                     if (existing) {
                         existing.qty++;
@@ -369,6 +410,7 @@
                 },
 
                 openProductModal(product) {
+                    this.track('product_view', product.id, {placement:'modal'});
                     this.selectedProduct = product;
                     this.modalOpen = true;
                 },
@@ -378,14 +420,34 @@
                     this.toastShow = true;
                     setTimeout(() => { this.toastShow = false; }, 2500);
                 },
-
-                sendWhatsAppOrder(whatsapp, shopName) {
+                async sendWhatsAppOrder(whatsapp, shopName) {
                     if (this.cart.length === 0) return;
-                    let text = `Hi ${shopName}! I would like to place an order:\n\n`;
+                    if (!this.customerName.trim() || this.customerPhone.replace(/\D/g,'').length < 10) {
+                        this.showToast('Please enter your name and valid mobile number.');
+                        return;
+                    }
+                    this.track('whatsapp_click', null, {placement:'cart_order', items:this.totalCartItems, total:this.cartTotal});
+                    try {
+                        await fetch(this.orderUrl, {
+                            method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
+                            body:JSON.stringify({
+                                customer_name:this.customerName.trim(), phone:this.customerPhone.replace(/\D/g,''),
+                                visitor_token:this.visitorToken,
+                                items:this.cart.map(i=>({product_id:i.id, qty:i.qty}))
+                            })
+                        });
+                    } catch(e) {}
+                    let text = `Hi ${shopName}! I am ${this.customerName}. I would like to place an order:
+
+`;
                     this.cart.forEach((item, index) => {
-                        text += `${index + 1}. ${item.name} x ${item.qty} = ₹${(item.price * item.qty).toLocaleString('en-IN')}\n`;
+                        text += `${index + 1}. ${item.name} x ${item.qty} = ₹${(item.price * item.qty).toLocaleString('en-IN')}
+`;
                     });
-                    text += `\n*Grand Total: ₹${this.formattedCartTotal}*\n\nPlease confirm availability and payment details.`;
+                    text += `
+*Grand Total: ₹${this.formattedCartTotal}*
+
+Please confirm availability and payment details.`;
                     const url = `https://wa.me/91${whatsapp}?text=${encodeURIComponent(text)}`;
                     window.open(url, '_blank');
                 }

@@ -7,7 +7,7 @@ return [
     'firebase_project_id' => env('FIREBASE_PROJECT_ID', 'pocket-showroom-307ef'),
 
     // Optional: make one configured email a backend admin without relying on a phone number.
-    'master_admin_email' => env('POCKET_SHOWROOM_MASTER_ADMIN_EMAIL', ''),
+    'master_admin_email' => (env('POCKET_SHOWROOM_MASTER_ADMIN_EMAIL') ?: 'akkiftp1@gmail.com'),
 
     // Keep the app fully usable without paid subscription while the product is being tested.
     'free_mode' => filter_var(env('POCKET_SHOWROOM_FREE_MODE', true), FILTER_VALIDATE_BOOL),
