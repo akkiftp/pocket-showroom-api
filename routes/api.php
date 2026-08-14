@@ -11,16 +11,16 @@ use App\Http\Controllers\Api\PublicShowroomController;
 use App\Http\Controllers\Api\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', function () {
-    return response()->json([
-        'ok' => true,
-        'service' => 'Pocket Showroom API',
-        'timestamp' => now()->toIso8601String(),
-    ]);
-});
+Route::get('/health', fn () => response()->json([
+    'ok' => true,
+    'service' => 'Pocket Showroom API',
+    'auth_mode' => config('pocket_showroom.auth_driver'),
+    'free_mode' => (bool) config('pocket_showroom.free_mode'),
+    'timestamp' => now()->toIso8601String(),
+]));
 
 Route::prefix('auth')->group(function () {
-    Route::post('/firebase-login', [AuthController::class, 'firebaseLogin']);
+    Route::post('/firebase-login', [AuthController::class, 'firebaseLogin'])->middleware('throttle:10,1');
 });
 
 Route::prefix('public/showrooms/{slug}')->group(function () {
@@ -33,10 +33,9 @@ Route::prefix('public/showrooms/{slug}')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-
     Route::get('/subscription/status', [SubscriptionController::class, 'status']);
 
-    Route::prefix('admin')->group(function () {
+    Route::prefix('admin')->middleware('admin')->group(function () {
         Route::get('/users', [AdminController::class, 'users']);
         Route::post('/users/{id}/activate', [AdminController::class, 'activate']);
         Route::post('/users/{id}/extend-trial', [AdminController::class, 'extendTrial']);

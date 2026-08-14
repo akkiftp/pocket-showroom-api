@@ -12,9 +12,13 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        'firebase_uid',
+        'auth_provider',
         'name',
         'phone',
         'email',
+        'email_verified_at',
+        'avatar_url',
         'subscription_status',
         'trial_expires_at',
         'subscription_expires_at',
@@ -22,10 +26,13 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
+        'password',
         'remember_token',
+        'firebase_uid',
     ];
 
     protected $casts = [
+        'email_verified_at' => 'datetime',
         'trial_expires_at' => 'datetime',
         'subscription_expires_at' => 'datetime',
         'is_admin' => 'boolean',
@@ -50,7 +57,7 @@ class User extends Authenticatable
         if ($this->is_admin || $this->subscription_status === 'active') return 365;
         if (!$this->trial_expires_at || $this->subscription_status === 'blocked' || $this->subscription_status === 'expired') return 0;
         $diff = now()->diffInDays($this->trial_expires_at, false);
-        return $diff < 0 ? 0 : (int)$diff + 1;
+        return $diff < 0 ? 0 : (int) $diff + 1;
     }
 
     public function getIsExpiredAttribute(): bool

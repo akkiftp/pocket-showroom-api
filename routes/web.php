@@ -8,4 +8,3 @@ Route::get('/', function () {
 });
 
 Route::get('/showrooms/{slug}', [WebShowroomController::class, 'show']);
-Route::get('/api/public/showrooms/{slug}', [WebShowroomController::class, 'showOrApi']);

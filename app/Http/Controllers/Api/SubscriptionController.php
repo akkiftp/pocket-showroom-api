@@ -10,15 +10,20 @@ class SubscriptionController extends Controller
     public function status(Request $request)
     {
         $user = $request->user();
+        $freeMode = (bool) config('pocket_showroom.free_mode', true);
+
         return response()->json([
             'status' => true,
-            'subscription_status' => $user->subscription_status ?? 'trial',
+            'free_mode' => $freeMode,
+            'subscription_status' => $freeMode && $user->subscription_status !== 'blocked'
+                ? 'active'
+                : ($user->subscription_status ?? 'trial'),
             'trial_expires_at' => $user->trial_expires_at?->toIso8601String(),
             'subscription_expires_at' => $user->subscription_expires_at?->toIso8601String(),
-            'is_trial_active' => $user->is_trial_active ?? true,
-            'days_remaining_in_trial' => $user->days_remaining_in_trial ?? 7,
-            'is_expired' => $user->is_expired ?? false,
-            'is_admin' => $user->is_admin ?? false,
+            'is_trial_active' => $freeMode ? true : $user->is_trial_active,
+            'days_remaining_in_trial' => $freeMode ? 365 : $user->days_remaining_in_trial,
+            'is_expired' => $freeMode ? false : $user->is_expired,
+            'is_admin' => (bool) $user->is_admin,
         ]);
     }
 }

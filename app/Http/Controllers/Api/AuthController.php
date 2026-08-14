@@ -4,92 +4,141 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Business;
 use App\Services\FirebaseTokenVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
+    /**
+     * Exchange a verified Firebase Email/Password or Google identity for
+     * a first-party Laravel Sanctum API token.
+     */
     public function firebaseLogin(Request $request)
     {
         $data = $request->validate([
-            'firebase_token' => ['required', 'string'],
+            'firebase_token' => ['required', 'string', 'min:100'],
+            'name' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $payload = FirebaseTokenVerifier::verify($data['firebase_token']);
+        $payload = FirebaseTokenVerifier::verify(
+            $data['firebase_token'],
+            (string) config('pocket_showroom.firebase_project_id')
+        );
+
         if (!$payload) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or expired Firebase ID token.',
+                'message' => 'Your sign-in session is invalid or expired. Please sign in again.',
             ], 401);
         }
 
-        // Extract phone number from Firebase payload
-        $rawPhone = $payload['phone_number'] ?? $payload['sub'] ?? null;
-        if (!$rawPhone) {
+        $provider = (string) data_get($payload, 'firebase.sign_in_provider', '');
+        if (!in_array($provider, ['password', 'google.com'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Phone number missing in Firebase token.',
-            ], 401);
+                'message' => 'Only Email/Password and Google Sign-In are enabled for Pocket Showroom.',
+            ], 403);
         }
 
-        // Canonical phone format (+91XXXXXXXXXX)
-        $cleanPhone = preg_replace('/[^0-9+]/', '', $rawPhone);
-        if (!str_starts_with($cleanPhone, '+')) {
-            $cleanPhone = '+91' . ltrim($cleanPhone, '0');
-        }
+        $firebaseUid = trim((string) ($payload['sub'] ?? ''));
+        $email = Str::lower(trim((string) ($payload['email'] ?? '')));
+        $emailVerified = filter_var($payload['email_verified'] ?? false, FILTER_VALIDATE_BOOL);
 
-        // Standard 10-digit number for matching
-        $digitsOnly = preg_replace('/[^0-9]/', '', $cleanPhone);
-        $shortPhone = (strlen($digitsOnly) >= 10) ? substr($digitsOnly, -10) : $digitsOnly;
+        if ($firebaseUid === '' || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A valid email address was not available from the sign-in provider.',
+            ], 422);
+        }
 
         try {
-            $user = User::where('phone', $cleanPhone)
-                ->orWhere('phone', $shortPhone)
-                ->orWhere('phone', '+' . $digitsOnly)
-                ->first();
+            $user = User::query()->where('firebase_uid', $firebaseUid)->first();
 
-            $isAdminPhone = ($shortPhone === '9026350101');
+            // Seamlessly link an older Pocket Showroom account by its email address.
+            if (!$user) {
+                $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+            }
+
+            $nameFromToken = trim((string) ($payload['name'] ?? ''));
+            $requestedName = trim((string) ($data['name'] ?? ''));
+            $displayName = $requestedName !== ''
+                ? $requestedName
+                : ($nameFromToken !== '' ? $nameFromToken : Str::before($email, '@'));
+
+            $avatar = trim((string) ($payload['picture'] ?? ''));
+            $freeMode = (bool) config('pocket_showroom.free_mode', true);
+            $masterAdminEmail = Str::lower(trim((string) config('pocket_showroom.master_admin_email', '')));
+            $isConfiguredAdmin = $masterAdminEmail !== '' && hash_equals($masterAdminEmail, $email);
 
             if (!$user) {
                 $user = User::create([
-                    'phone' => $cleanPhone,
-                    'name' => 'Shop Owner',
-                    'subscription_status' => $isAdminPhone ? 'active' : 'trial',
-                    'trial_expires_at' => now()->addDays(7),
-                    'is_admin' => $isAdminPhone,
+                    'firebase_uid' => $firebaseUid,
+                    'auth_provider' => $provider,
+                    'name' => $displayName ?: 'Shop Owner',
+                    'email' => $email,
+                    'email_verified_at' => $emailVerified ? now() : null,
+                    'avatar_url' => $avatar !== '' ? $avatar : null,
+                    'subscription_status' => $freeMode || $isConfiguredAdmin ? 'active' : 'trial',
+                    'trial_expires_at' => $freeMode || $isConfiguredAdmin ? null : now()->addDays(7),
+                    'subscription_expires_at' => null,
+                    'is_admin' => $isConfiguredAdmin,
                 ]);
-            } else if ($isAdminPhone && !$user->is_admin) {
-                $user->update(['is_admin' => true, 'subscription_status' => 'active']);
+            } else {
+                $updates = [
+                    'firebase_uid' => $firebaseUid,
+                    'auth_provider' => $provider,
+                    'email' => $email,
+                ];
+
+                if (($user->name === null || trim($user->name) === '' || $user->name === 'Shop Owner') && $displayName !== '') {
+                    $updates['name'] = $displayName;
+                }
+                if ($avatar !== '') {
+                    $updates['avatar_url'] = $avatar;
+                }
+                if ($emailVerified && !$user->email_verified_at) {
+                    $updates['email_verified_at'] = now();
+                }
+                if ($isConfiguredAdmin && !$user->is_admin) {
+                    $updates['is_admin'] = true;
+                }
+                if ($freeMode && $user->subscription_status !== 'blocked') {
+                    $updates['subscription_status'] = 'active';
+                    $updates['trial_expires_at'] = null;
+                    $updates['subscription_expires_at'] = null;
+                }
+
+                $user->update($updates);
             }
 
-            $token = $user->createToken('flutter-owner-app')->plainTextToken;
-            $business = $user->business;
+            // Keep only the latest owner-app session token for this account.
+            $user->tokens()->where('name', 'pocket-showroom-app')->delete();
+            $token = $user->createToken('pocket-showroom-app')->plainTextToken;
+            $user = $user->fresh()->load('business');
 
             return response()->json([
                 'success' => true,
-                'message' => 'Login successful.',
+                'message' => 'Signed in successfully.',
                 'token' => $token,
                 'token_type' => 'Bearer',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'phone' => $user->phone,
-                    'subscription_status' => $user->subscription_status ?? 'trial',
-                    'trial_expires_at' => $user->trial_expires_at?->toIso8601String(),
-                    'is_expired' => $user->is_expired ?? false,
-                    'is_admin' => (bool) $user->is_admin,
-                ],
-                'business' => $business,
-                'needs_business_setup' => ($business === null),
+                'free_mode' => $freeMode,
+                'email_verified' => (bool) $user->email_verified_at,
+                'user' => $user,
+                'business' => $user->business,
+                'needs_business_setup' => $user->business === null,
             ]);
         } catch (\Throwable $e) {
-            Log::error('Firebase login error: ' . $e->getMessage());
+            Log::error('Firebase email/google login failed', [
+                'email' => $email,
+                'provider' => $provider,
+                'exception' => $e,
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Authentication failed: ' . $e->getMessage(),
+                'message' => 'Unable to complete sign in right now. Please try again.',
             ], 500);
         }
     }
@@ -97,11 +146,14 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user()->load('business');
+
         return response()->json([
             'success' => true,
+            'free_mode' => (bool) config('pocket_showroom.free_mode', true),
+            'email_verified' => (bool) $user->email_verified_at,
             'user' => $user,
             'business' => $user->business,
-            'needs_business_setup' => ($user->business === null),
+            'needs_business_setup' => $user->business === null,
         ]);
     }
 
@@ -115,4 +167,3 @@ class AuthController extends Controller
         ]);
     }
 }
-
