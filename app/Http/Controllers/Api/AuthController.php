@@ -57,8 +57,15 @@ class AuthController extends Controller
             $user = User::query()->where('firebase_uid', $firebaseUid)->first();
 
             // Seamlessly link an older Pocket Showroom account by its email address.
-            if (!$user) {
-                $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+            if (!$user && $email !== '') {
+                // Fetch all users with this email to handle any duplicates created accidentally
+                $users = User::with('business')->whereRaw('LOWER(email) = ?', [$email])->get();
+                if ($users->isNotEmpty()) {
+                    // Pick the user account that actually has a business, prioritizing the one with the most products
+                    $user = $users->sortByDesc(function ($u) {
+                        return $u->business ? $u->business->products()->count() : -1;
+                    })->first();
+                }
             }
 
             $nameFromToken = trim((string) ($payload['name'] ?? ''));

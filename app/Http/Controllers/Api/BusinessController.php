@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Cloudinary\Cloudinary;
 
 class BusinessController extends Controller
 {
@@ -73,11 +74,26 @@ class BusinessController extends Controller
             'logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        if ($business->logo_path) {
+        if ($business->logo_path && !Str::startsWith($business->logo_path, 'http')) {
             Storage::disk('public')->delete($business->logo_path);
         }
 
-        $path = $data['logo']->store("businesses/{$business->id}/branding", 'public');
+        try {
+            if (env('CLOUDINARY_URL')) {
+                $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+                $upload = $cloudinary->uploadApi()->upload($data['logo']->getRealPath(), [
+                    'folder' => "businesses/{$business->id}/branding",
+                ]);
+                $path = $upload['secure_url'];
+            } else {
+                $path = $data['logo']->store("businesses/{$business->id}/branding", 'public');
+                $path = url(Storage::url($path));
+            }
+        } catch (\Exception $e) {
+            $path = $data['logo']->store("businesses/{$business->id}/branding", 'public');
+            $path = url(Storage::url($path));
+        }
+
         $business->update(['logo_path' => $path]);
 
         return response()->json([
@@ -94,11 +110,26 @@ class BusinessController extends Controller
             'banner' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
         ]);
 
-        if ($business->banner_path) {
+        if ($business->banner_path && !Str::startsWith($business->banner_path, 'http')) {
             Storage::disk('public')->delete($business->banner_path);
         }
 
-        $path = $data['banner']->store("businesses/{$business->id}/branding", 'public');
+        try {
+            if (env('CLOUDINARY_URL')) {
+                $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+                $upload = $cloudinary->uploadApi()->upload($data['banner']->getRealPath(), [
+                    'folder' => "businesses/{$business->id}/branding",
+                ]);
+                $path = $upload['secure_url'];
+            } else {
+                $path = $data['banner']->store("businesses/{$business->id}/branding", 'public');
+                $path = url(Storage::url($path));
+            }
+        } catch (\Exception $e) {
+            $path = $data['banner']->store("businesses/{$business->id}/branding", 'public');
+            $path = url(Storage::url($path));
+        }
+
         $business->update(['banner_path' => $path]);
 
         return response()->json([

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Cloudinary\Cloudinary;
 
 class ProductController extends Controller
 {
@@ -181,7 +182,16 @@ class ProductController extends Controller
         $product = $this->owned($request, $product);
 
         foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->path);
+            if (Str::startsWith($image->path, 'http')) {
+                // If it's a Cloudinary URL, we can delete by public_id if needed, but for now we skip local deletion
+                try {
+                    $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+                    // Extract public ID from URL (basic extraction, optional step)
+                    // We'll leave it in Cloudinary for safety or implement proper public_id extraction later
+                } catch (\Exception $e) {}
+            } else {
+                Storage::disk('public')->delete($image->path);
+            }
         }
 
         $product->delete();
@@ -218,7 +228,14 @@ class ProductController extends Controller
         $product = $this->owned($request, $product);
         abort_unless($image->product_id === $product->id, 404);
 
-        Storage::disk('public')->delete($image->path);
+        if (Str::startsWith($image->path, 'http')) {
+            try {
+                $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+                // Extraction of public ID could be done here if strictly needed
+            } catch (\Exception $e) {}
+        } else {
+            Storage::disk('public')->delete($image->path);
+        }
         $image->delete();
 
         $first = $product->images()->first();
@@ -242,7 +259,23 @@ class ProductController extends Controller
         $sort = $existingCount;
 
         foreach ($request->file('images', []) as $file) {
-            $path = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
+            try {
+                if (env('CLOUDINARY_URL')) {
+                    $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+                    $upload = $cloudinary->uploadApi()->upload($file->getRealPath(), [
+                        'folder' => "businesses/{$product->business_id}/products/{$product->id}",
+                    ]);
+                    $path = $upload['secure_url'];
+                } else {
+                    $path = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
+                    // Store absolute URL even for local fallback
+                    $path = url(Storage::url($path));
+                }
+            } catch (\Exception $e) {
+                // Fallback to local if Cloudinary fails
+                $path = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
+                $path = url(Storage::url($path));
+            }
 
             $product->images()->create([
                 'path' => $path,
