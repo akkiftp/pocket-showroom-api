@@ -15,6 +15,10 @@ services:
         fromDatabase:
           name: pocket-showroom-db
           property: connectionString
+      - key: OPENAI_MODEL
+        value: openai/gpt-4o-mini
+      - key: OPENAI_API_KEY
+        sync: false
 
 databases:
   - name: pocket-showroom-db
