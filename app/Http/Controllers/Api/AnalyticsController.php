@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\ActivityEvent;
 use App\Models\Business;
 use App\Models\Order;
@@ -11,10 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
-    private function business(Request $request): Business
-    {
-        return Business::where('user_id', $request->user()->id)->firstOrFail();
-    }
+    private function business(Request $request): Business { return BusinessContext::require($request); }
 
     public function overview(Request $request)
     {

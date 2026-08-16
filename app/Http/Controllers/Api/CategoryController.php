@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\Business;
 use App\Models\Category;
 use Illuminate\Http\Request;
@@ -11,10 +12,7 @@ use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
-    private function business(Request $request): Business
-    {
-        return Business::where('user_id', $request->user()->id)->firstOrFail();
-    }
+    private function business(Request $request): Business { return BusinessContext::require($request); }
 
     private function owned(Request $request, Category $category): Category
     {

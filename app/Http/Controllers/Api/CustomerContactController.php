@@ -2,13 +2,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\Business;
 use App\Models\CustomerContact;
 use Illuminate\Http\Request;
 
 class CustomerContactController extends Controller
 {
-    private function business(Request $request): Business { return Business::where('user_id',$request->user()->id)->firstOrFail(); }
+    private function business(Request $request): Business { return BusinessContext::require($request); }
 
     public function index(Request $request)
     {

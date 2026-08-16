@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\Business;
 use App\Models\Product;
 use App\Services\ActivityTracker;
@@ -61,7 +62,7 @@ class TrackingController extends Controller
             'product_id' => ['nullable','integer'],
             'metadata' => ['nullable','array'],
         ]);
-        $business = Business::where('user_id', $request->user()->id)->firstOrFail();
+        $business = BusinessContext::require($request);
         $product = !empty($data['product_id']) ? Product::where('business_id',$business->id)->findOrFail($data['product_id']) : null;
         ActivityTracker::record($request,$business,$data['event_type'],$product,$data['metadata'] ?? [], source:'owner_app');
         return response()->json(['success'=>true]);

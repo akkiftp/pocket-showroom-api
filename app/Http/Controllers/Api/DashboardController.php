@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\Business;
 use Illuminate\Http\Request;
 
@@ -9,7 +10,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $business=Business::where('user_id',$request->user()->id)->firstOrFail();
+        $business=BusinessContext::require($request);
         $events=$business->activityEvents();
         return response()->json([
             'business'=>$business,

@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\BusinessContext;
 use App\Models\Business;
 use App\Models\Inquiry;
 use Illuminate\Http\Request;
 
 class InquiryController extends Controller
 {
-    private function business(Request $request): Business
-    {
-        return Business::where('user_id', $request->user()->id)->firstOrFail();
-    }
+    private function business(Request $request): Business { return BusinessContext::require($request); }
 
     private function owned(Request $request, Inquiry $inquiry): Inquiry
     {

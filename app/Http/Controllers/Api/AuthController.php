@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\FirebaseTokenVerifier;
+use App\Services\BusinessContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -91,6 +92,8 @@ class AuthController extends Controller
                     'trial_expires_at' => $freeMode || $isConfiguredAdmin ? null : now()->addDays(7),
                     'subscription_expires_at' => null,
                     'is_admin' => $isConfiguredAdmin,
+                    'role' => $isConfiguredAdmin ? User::ROLE_SUPER_ADMIN : User::ROLE_SHOP_OWNER,
+                    'is_active' => true,
                 ]);
             } else {
                 $updates = [
@@ -108,8 +111,9 @@ class AuthController extends Controller
                 if ($emailVerified && !$user->email_verified_at) {
                     $updates['email_verified_at'] = now();
                 }
-                if ($isConfiguredAdmin && !$user->is_admin) {
+                if ($isConfiguredAdmin && !$user->isSuperAdmin()) {
                     $updates['is_admin'] = true;
+                    $updates['role'] = User::ROLE_SUPER_ADMIN;
                 }
                 if ($freeMode && $user->subscription_status !== 'blocked') {
                     $updates['subscription_status'] = 'active';
@@ -123,7 +127,12 @@ class AuthController extends Controller
             // Keep only the latest owner-app session token for this account.
             $user->tokens()->where('name', 'pocket-showroom-app')->delete();
             $token = $user->createToken('pocket-showroom-app')->plainTextToken;
-            $user = $user->fresh()->load('business');
+            $user = $user->fresh();
+            if (!$user->is_active) {
+                $user->tokens()->delete();
+                return response()->json(['success'=>false,'message'=>'This account has been disabled.'],403);
+            }
+            $business = BusinessContext::forUser($user);
 
             return response()->json([
                 'success' => true,
@@ -133,8 +142,8 @@ class AuthController extends Controller
                 'free_mode' => $freeMode,
                 'email_verified' => (bool) $user->email_verified_at,
                 'user' => $user,
-                'business' => $user->business,
-                'needs_business_setup' => $user->business === null,
+                'business' => $business,
+                'needs_business_setup' => $user->isShopOwner() && $business === null,
             ]);
         } catch (\Throwable $e) {
             Log::error('Firebase email/google login failed', [
@@ -152,15 +161,16 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        $user = $request->user()->load('business');
+        $user = $request->user();
+        $business = BusinessContext::forUser($user);
 
         return response()->json([
             'success' => true,
             'free_mode' => (bool) config('pocket_showroom.free_mode', true),
             'email_verified' => (bool) $user->email_verified_at,
             'user' => $user,
-            'business' => $user->business,
-            'needs_business_setup' => $user->business === null,
+            'business' => $business,
+            'needs_business_setup' => $user->isShopOwner() && $business === null,
         ]);
     }
 
