@@ -256,23 +256,37 @@ class ProductController extends Controller
         $existingCount = $product->images()->count();
         $sort = $existingCount;
 
+        $rawCloudinary = env('CLOUDINARY_URL') ?: getenv('CLOUDINARY_URL') ?: config('services.cloudinary.url');
+        if ($rawCloudinary) {
+            $rawCloudinary = trim((string) $rawCloudinary);
+            if (str_starts_with($rawCloudinary, 'CLOUDINARY_URL=')) {
+                $rawCloudinary = trim(substr($rawCloudinary, 15));
+            }
+            $rawCloudinary = trim($rawCloudinary, '"\'');
+        }
+
         foreach ($request->file('images', []) as $file) {
-            try {
-                if (env('CLOUDINARY_URL')) {
-                    $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+            $path = null;
+            if ($rawCloudinary && str_starts_with($rawCloudinary, 'cloudinary://')) {
+                try {
+                    $cloudinary = new Cloudinary($rawCloudinary);
                     $upload = $cloudinary->uploadApi()->upload($file->getRealPath(), [
                         'folder' => "businesses/{$product->business_id}/products/{$product->id}",
+                        'resource_type' => 'auto',
                     ]);
-                    $path = $upload['secure_url'];
-                } else {
-                    $path = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
-                    // Store absolute URL even for local fallback
-                    $path = url(Storage::url($path));
+                    if (!empty($upload['secure_url'])) {
+                        $path = $upload['secure_url'];
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Cloudinary upload error: ' . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                // Fallback to local if Cloudinary fails
-                $path = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
-                $path = url(Storage::url($path));
+            }
+
+            if (!$path) {
+                $saved = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
+                $appUrl = env('APP_URL') ?: 'https://pocket-showroom-api.onrender.com';
+                $appUrl = rtrim($appUrl, '/');
+                $path = $appUrl . '/storage/' . $saved;
             }
 
             $product->images()->create([

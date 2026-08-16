@@ -217,8 +217,12 @@
             @forelse($products ?? [] as $product)
             @php
                 $img = !empty($product->images) && count($product->images) > 0 ? $product->images[0]->path : null;
-                if ($img && !str_starts_with($img, 'http')) {
-                    $img = asset('storage/'.$img);
+                if ($img) {
+                    if (str_contains($img, 'localhost')) {
+                        $img = preg_replace('#https?://localhost(:[0-9]+)?#', 'https://pocket-showroom-api.onrender.com', $img);
+                    } elseif (!str_starts_with($img, 'http')) {
+                        $img = asset('storage/'.$img);
+                    }
                 }
                 $hasOffer = !empty($product->offer_price) && $product->offer_price < $product->price;
                 $selling = $hasOffer ? $product->offer_price : $product->price;
@@ -236,9 +240,13 @@
                  data-orig-price="{{ $product->price }}">
 
                 <!-- Image Box -->
-                <div class="relative w-full aspect-square bg-gray-100 overflow-hidden cursor-pointer" onclick="showProductDetails({{ $product->id }})">
+                <div class="relative w-full aspect-square bg-gradient-to-br from-brand-50/50 to-pink-50/40 overflow-hidden cursor-pointer" onclick="showProductDetails({{ $product->id }})">
                     @if($img)
-                        <img src="{{ $img }}" alt="{{ $product->name }}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 active:scale-105" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500';">
+                        <img src="{{ $img }}" alt="{{ $product->name }}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 active:scale-105" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">
+                        <div style="display:none;" class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-pink-50 text-brand-700">
+                            <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            <span class="text-[10px] font-black uppercase mt-1">Showroom Item</span>
+                        </div>
                     @else
                         <div class="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-50 to-pink-50 text-brand-700">
                             <svg class="w-8 h-8 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -437,7 +445,7 @@
             } else {
                 container.innerHTML = customerBag.map(item => `
                     <div class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 border border-gray-100">
-                        <img src="${item.img || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200'}" class="w-12 h-12 rounded-lg object-cover bg-white" onerror="this.src='https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200'">
+                        <img src="${item.img || ''}" class="w-12 h-12 rounded-lg object-cover bg-white" onerror="this.src='https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200'">
                         <div class="flex-1 min-w-0">
                             <h4 class="font-extrabold text-gray-950 text-xs truncate">${item.name}</h4>
                             <p class="text-xs font-black text-brand-700">₹${item.price.toLocaleString('en-IN')}</p>
@@ -576,7 +584,13 @@
             const desc = card.getAttribute('data-desc');
             const img = card.getAttribute('data-img');
 
-            document.getElementById('modal-img').src = img || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500';
+            const modalImg = document.getElementById('modal-img');
+            if (img && img.trim() !== '') {
+                modalImg.src = img;
+                modalImg.style.display = 'block';
+            } else {
+                modalImg.style.display = 'none';
+            }
             document.getElementById('modal-cat').innerText = cat.toUpperCase();
             document.getElementById('modal-title').innerText = name;
             document.getElementById('modal-desc').innerText = desc || 'Exclusive genuine item from our verified showroom collection.';
