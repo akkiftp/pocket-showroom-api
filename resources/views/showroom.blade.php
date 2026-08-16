@@ -1,459 +1,734 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $business->name }} | Pocket Showroom</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ $business->name ?? 'Showroom' }} — Premium Exclusive Showroom</title>
+    <meta name="description" content="Explore live exclusive collections from {{ $business->name ?? 'our showroom' }}. Browse genuine items, live prices, and order directly on WhatsApp.">
+    
+    <!-- Modern Luxury Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS with custom plugins -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F8FAFC; color: #0F172A; }
-        .glass-header { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(14px); }
-        .product-card { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease; }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 16px 30px -10px rgba(79, 70, 229, 0.12); }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        [x-cloak] { display: none !important; }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col relative pb-24"
-      x-data="showroomData()"
-      x-init="initCart(); initTracking()">
-
-    <!-- Header -->
-    <header class="sticky top-0 z-40 glass-header border-b border-slate-200/80 shadow-xs">
-        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-pink-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-indigo-500/20">
-                    {{ strtoupper(substr($business->name, 0, 1)) }}
-                </div>
-                <div>
-                    <h1 class="font-extrabold text-slate-900 text-lg leading-tight">{{ $business->name }}</h1>
-                    <p class="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
-                        <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-[11px] font-bold">{{ $business->business_type ?? 'Digital Showroom' }}</span>
-                        @if($business->city) • <span>📍 {{ $business->city }}</span> @endif
-                    </p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <!-- Cart Trigger Button -->
-                <button @click="cartOpen = true"
-                        class="relative p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition flex items-center gap-2 text-sm border border-slate-200/80">
-                    <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 11h14l1 12H4L5 11z"/></svg>
-                    <span class="hidden sm:inline font-bold">Cart</span>
-                    <span x-show="totalCartItems > 0"
-                          x-text="totalCartItems"
-                          class="bg-indigo-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full shadow-xs"></span>
-                </button>
-
-                @if($business->whatsapp)
-                <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text={{ urlencode('Hi '.$business->name.', I visited your online showroom.') }}"
-                   @click="track('whatsapp_click', null, {placement:'header'})"
-                   target="_blank"
-                   class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition shadow-sm shadow-emerald-600/20">
-                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
-                    <span class="hidden xs:inline">WhatsApp</span>
-                </a>
-                @endif
-            </div>
-        </div>
-    </header>
-
-    <!-- Banner Info -->
-    <div class="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-950 text-white py-12 px-4 relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="max-w-5xl mx-auto text-center relative z-10">
-            <h2 class="text-3xl sm:text-4xl font-black tracking-tight mb-3">Welcome to {{ $business->name }}</h2>
-            <p class="text-purple-200/90 text-sm sm:text-base max-w-xl mx-auto font-medium leading-relaxed mb-6">{{ $business->about ?? 'Explore our latest collection, add items to cart and order directly on WhatsApp.' }}</p>
-
-            <!-- Search Bar -->
-            <div class="max-w-md mx-auto relative">
-                <input type="text"
-                       x-model="searchQuery"
-                       placeholder="Search products in {{ $business->name }}..."
-                       class="w-full bg-white/10 backdrop-blur-md text-white placeholder-purple-200/60 border border-white/20 rounded-2xl px-4 py-3 pl-11 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/80 shadow-lg">
-                <svg class="w-5 h-5 text-purple-200/70 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <button x-show="searchQuery" @click="searchQuery = ''" class="absolute right-3.5 top-3 text-purple-200 hover:text-white font-bold text-xs">✕ Clear</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <main class="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
-
-        <!-- Category Filter Tabs -->
-        @if($categories->count() > 0)
-        <div class="flex items-center gap-2.5 overflow-x-auto pb-4 mb-8 no-scrollbar">
-            <button @click="activeCategory = 'all'"
-                    :class="activeCategory === 'all' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
-                    class="font-bold text-xs px-5 py-2.5 rounded-full border transition cursor-pointer whitespace-nowrap">
-                ✨ All Products ({{ $products->count() }})
-            </button>
-            @foreach($categories as $cat)
-            <button @click="activeCategory = '{{ $cat->id }}'"
-                    :class="activeCategory === '{{ $cat->id }}' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'"
-                    class="font-bold text-xs px-5 py-2.5 rounded-full border transition cursor-pointer whitespace-nowrap">
-                {{ $cat->name }}
-            </button>
-            @endforeach
-        </div>
-        @endif
-
-        <!-- Product Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            @foreach($products as $product)
-            @php
-                $img = $product->images->first()?->path;
-                $imgUrl = $img ? (str_starts_with($img, 'http') ? $img : asset('storage/'.$img)) : 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=600&auto=format&fit=crop&q=80';
-                $waText = urlencode("Hi {$business->name}, I am interested in {$product->name} (Price: ₹".number_format($product->offer_price ?? $product->price)."). Please share availability.");
-            @endphp
-            <div class="product-card bg-white rounded-3xl border border-slate-200/90 overflow-hidden flex flex-col"
-                 x-show="matchesFilter('{{ $product->category_id }}', '{{ strtolower(addslashes($product->name)) }}')"
-                 x-transition:enter="transition ease-out duration-200"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100">
-
-                <div class="relative aspect-square bg-slate-100 overflow-hidden cursor-pointer"
-                     @click="openProductModal({{ json_encode([
-                         'id' => $product->id,
-                         'name' => $product->name,
-                         'category' => $product->category?->name ?? 'Catalogue',
-                         'description' => $product->description,
-                         'price' => $product->price,
-                         'offer_price' => $product->offer_price,
-                         'img' => $imgUrl,
-                         'waText' => $waText
-                     ]) }})">
-                    <img src="{{ $imgUrl }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
-                    @if($product->offer_price && $product->offer_price < $product->price)
-                    <span class="absolute top-3 left-3 bg-rose-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-md tracking-wider">
-                        OFFER
-                    </span>
-                    @endif
-                </div>
-
-                <div class="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                        <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-1">{{ $product->category?->name ?? 'Catalogue' }}</span>
-                        <h3 class="font-bold text-slate-900 text-sm sm:text-base line-clamp-1 mb-1">{{ $product->name }}</h3>
-                        <p class="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">{{ $product->description }}</p>
-                    </div>
-
-                    <div>
-                        <div class="flex items-baseline gap-2 mb-3">
-                            <span class="text-lg font-black text-slate-900">₹{{ number_format($product->offer_price ?? $product->price) }}</span>
-                            @if($product->offer_price && $product->offer_price < $product->price)
-                            <span class="text-xs font-semibold text-slate-400 line-through">₹{{ number_format($product->price) }}</span>
-                            @endif
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <!-- Add to Cart -->
-                            <button @click="addToCart({{ json_encode([
-                                        'id' => $product->id,
-                                        'name' => $product->name,
-                                        'price' => $product->offer_price ?? $product->price,
-                                        'img' => $imgUrl
-                                    ]) }})"
-                                    class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition border border-slate-200">
-                                <span>+ Cart</span>
-                            </button>
-
-                            <!-- Buy Now / Inquire -->
-                            @if($business->whatsapp)
-                            <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text={{ $waText }}"
-                               @click="track('whatsapp_click', {{ $product->id }}, {placement:'product_card'})"
-                               target="_blank"
-                               class="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition shadow-sm shadow-indigo-600/20">
-                                <span>Buy Now</span>
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-
-    </main>
-
-    <!-- Floating Bottom Cart Bar -->
-    <div x-show="totalCartItems > 0"
-         x-cloak
-         x-transition:enter="transition ease-out duration-300 transform"
-         x-transition:enter-start="translate-y-full opacity-0"
-         x-transition:enter-end="translate-y-0 opacity-100"
-         class="fixed bottom-4 left-4 right-4 max-w-xl mx-auto z-40 bg-slate-900 text-white rounded-2xl p-4 shadow-2xl flex items-center justify-between border border-slate-800">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                🛒 <span x-text="totalCartItems"></span>
-            </div>
-            <div>
-                <p class="text-xs font-medium text-slate-400"><span x-text="totalCartItems"></span> Item(s) Selected</p>
-                <p class="text-base font-black text-white">Total: ₹<span x-text="formattedCartTotal"></span></p>
-            </div>
-        </div>
-        <button @click="cartOpen = true" class="bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold px-5 py-2.5 rounded-xl text-sm transition shadow-md shadow-emerald-500/20">
-            View Cart & Order ➔
-        </button>
-    </div>
-
-    <!-- Cart Drawer Modal -->
-    <div x-show="cartOpen" x-cloak class="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" @click="cartOpen = false"></div>
-        <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-            <div class="pointer-events-auto w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
-                
-                <!-- Drawer Header -->
-                <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xl">🛍️</span>
-                        <h3 class="text-lg font-black text-slate-900">Your Shopping Cart</h3>
-                    </div>
-                    <button @click="cartOpen = false" class="text-slate-400 hover:text-slate-600 font-bold p-1">✕</button>
-                </div>
-
-                <!-- Cart Items List -->
-                <div class="p-5 flex-1 overflow-y-auto space-y-4">
-                    <template x-if="cart.length === 0">
-                        <div class="text-center py-12">
-                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-3xl mx-auto mb-3">🛒</div>
-                            <h4 class="font-bold text-slate-800">Your cart is empty</h4>
-                            <p class="text-xs text-slate-500 mt-1">Browse products and tap "+ Add to Cart"</p>
-                        </div>
-                    </template>
-
-                    <template x-for="item in cart" :key="item.id">
-                        <div class="flex items-center justify-between gap-3 p-3 border border-slate-200 rounded-2xl bg-white shadow-2xs">
-                            <img :src="item.img" :alt="item.name" class="w-14 h-14 rounded-xl object-cover bg-slate-100">
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-slate-900 text-sm truncate" x-text="item.name"></h4>
-                                <p class="text-xs font-black text-indigo-600">₹<span x-text="Number(item.price).toLocaleString('en-IN')"></span></p>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-                                <button @click="updateQty(item.id, -1)" class="w-6 h-6 rounded-lg bg-white font-bold text-slate-700 flex items-center justify-center text-xs shadow-2xs">-</button>
-                                <span class="text-xs font-black text-slate-900 w-4 text-center" x-text="item.qty"></span>
-                                <button @click="updateQty(item.id, 1)" class="w-6 h-6 rounded-lg bg-white font-bold text-slate-700 flex items-center justify-center text-xs shadow-2xs">+</button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <!-- Drawer Footer & WhatsApp Checkout -->
-                <div class="p-5 border-t border-slate-200 bg-slate-50 space-y-4">
-                    <div class="flex justify-between items-center text-base font-black text-slate-900">
-                        <span>Grand Total:</span>
-                        <span class="text-xl text-indigo-600">₹<span x-text="formattedCartTotal"></span></span>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input x-model="customerName" type="text" placeholder="Your name" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
-                        <input x-model="customerPhone" type="tel" placeholder="Mobile number" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm bg-white">
-                    </div>
-                    <p class="text-[10px] text-slate-500">Name/mobile helps the shop owner identify your enquiry. Actual WhatsApp replies stay inside WhatsApp.</p>
-                    @if($business->whatsapp)
-                    <button @click="sendWhatsAppOrder('{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}', '{{ addslashes($business->name) }}')"
-                            :disabled="cart.length === 0"
-                            class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20">
-                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
-                        <span>Send Order on WhatsApp</span>
-                    </button>
-                    @endif
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Product Detail Modal -->
-    <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs" @click="modalOpen = false"></div>
-        <div class="relative max-w-lg w-full bg-white rounded-3xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]">
-            <button @click="modalOpen = false" class="absolute top-3 right-3 bg-slate-900/50 hover:bg-slate-900 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold z-20">✕</button>
-            <div class="aspect-square bg-slate-100 relative overflow-hidden">
-                <img :src="selectedProduct.img" :alt="selectedProduct.name" class="w-full h-full object-cover">
-            </div>
-            <div class="p-6 overflow-y-auto flex-1">
-                <span class="text-xs font-black text-indigo-600 uppercase tracking-widest" x-text="selectedProduct.category"></span>
-                <h3 class="text-xl font-black text-slate-900 mt-1 mb-2" x-text="selectedProduct.name"></h3>
-                <p class="text-xs text-slate-600 leading-relaxed mb-4" x-text="selectedProduct.description"></p>
-                <div class="flex items-baseline gap-3 mb-6">
-                    <span class="text-2xl font-black text-slate-900">₹<span x-text="Number(selectedProduct.offer_price || selectedProduct.price).toLocaleString('en-IN')"></span></span>
-                    <span x-show="selectedProduct.offer_price" class="text-sm font-bold text-slate-400 line-through">₹<span x-text="Number(selectedProduct.price).toLocaleString('en-IN')"></span></span>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <button @click="addToCart(selectedProduct); modalOpen = false" class="py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-sm border border-slate-200">+ Add to Cart</button>
-                    @if($business->whatsapp)
-                    <a :href="'https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text=' + selectedProduct.waText" @click="track('whatsapp_click', selectedProduct.id, {placement:'product_modal'})" target="_blank" class="py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-1 shadow-sm">Buy Now</a>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div x-show="toastShow"
-         x-cloak
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-0 translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="fixed top-20 right-4 z-50 bg-slate-900 text-white font-bold text-xs px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800">
-        <span>✅</span> <span x-text="toastMessage"></span>
-    </div>
-
-    <!-- Alpine.js Application Script -->
     <script>
-        function showroomData() {
-            return {
-                activeCategory: 'all',
-                searchQuery: '',
-                cartOpen: false,
-                modalOpen: false,
-                toastShow: false,
-                toastMessage: '',
-                cart: [],
-                selectedProduct: {},
-                visitorToken: '',
-                trackingUrl: @json(url('/api/public/showrooms/'.$business->slug.'/events')),
-                orderUrl: @json(url('/api/public/showrooms/'.$business->slug.'/orders')),
-                customerName: '',
-                customerPhone: '',
-
-                initCart() {
-                    const saved = localStorage.getItem('ps_cart_{{ $business->id }}');
-                    if (saved) {
-                        try { this.cart = JSON.parse(saved); } catch(e) {}
-                    }
-                },
-
-                initTracking() {
-                    const key = 'ps_visitor_{{ $business->id }}';
-                    let token = localStorage.getItem(key);
-                    if (!token) {
-                        token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : '00000000-0000-4000-8000-' + Math.random().toString(16).slice(2,14).padEnd(12,'0').slice(0,12);
-                        localStorage.setItem(key, token);
-                    }
-                    this.visitorToken = token;
-                    this.track('showroom_view', null, {path: location.pathname});
-                },
-
-                track(eventType, productId = null, metadata = {}) {
-                    const payload = {
-                        event_type: eventType,
-                        visitor_token: this.visitorToken,
-                        product_id: productId || null,
-                        source: 'web',
-                        referrer: document.referrer || null,
-                        metadata: metadata
-                    };
-                    fetch(this.trackingUrl, {
-                        method: 'POST',
-                        headers: {'Content-Type':'application/json','Accept':'application/json'},
-                        body: JSON.stringify(payload),
-                        keepalive: true
-                    }).catch(() => {});
-                },
-
-                saveCart() {
-                    localStorage.setItem('ps_cart_{{ $business->id }}', JSON.stringify(this.cart));
-                },
-
-                matchesFilter(catId, name) {
-                    const matchesCategory = (this.activeCategory === 'all' || String(this.activeCategory) === String(catId));
-                    const matchesSearch = !this.searchQuery || name.includes(this.searchQuery.toLowerCase());
-                    return matchesCategory && matchesSearch;
-                },
-
-                addToCart(product) {
-                    this.track('add_to_cart', product.id, {qty:1});
-                    const existing = this.cart.find(i => i.id === product.id);
-                    if (existing) {
-                        existing.qty++;
-                    } else {
-                        this.cart.push({
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            img: product.img,
-                            qty: 1
-                        });
-                    }
-                    this.saveCart();
-                    this.showToast('Added ' + product.name + ' to Cart!');
-                },
-
-                updateQty(id, delta) {
-                    const item = this.cart.find(i => i.id === id);
-                    if (item) {
-                        item.qty += delta;
-                        if (item.qty <= 0) {
-                            this.cart = this.cart.filter(i => i.id !== id);
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Cinzel"', 'serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#FDF2F7',
+                            100: '#FCE7F1',
+                            200: '#FBCFE5',
+                            500: '#D6227B',
+                            600: '#BD1567',
+                            700: '{{ $business->theme_primary ?? "#8C174A" }}',
+                            800: '#6B0F37',
+                            900: '#4A0825',
+                            950: '#260312',
+                        },
+                        gold: {
+                            300: '#F3E2A3',
+                            400: '#E7CE75',
+                            500: '{{ $business->theme_secondary ?? "#D4AF37" }}',
+                            600: '#B89420',
+                            700: '#947413',
                         }
+                    },
+                    boxShadow: {
+                        'luxury': '0 20px 40px -15px rgba(140, 23, 74, 0.15), 0 0 20px 0 rgba(0, 0, 0, 0.04)',
+                        'card-hover': '0 25px 50px -12px rgba(140, 23, 74, 0.22), 0 0 0 1px rgba(212, 175, 55, 0.3)',
+                        'glow': '0 0 35px rgba(212, 175, 55, 0.35)',
                     }
-                    this.saveCart();
-                },
-
-                get totalCartItems() {
-                    return this.cart.reduce((sum, item) => sum + item.qty, 0);
-                },
-
-                get cartTotal() {
-                    return this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-                },
-
-                get formattedCartTotal() {
-                    return Number(this.cartTotal).toLocaleString('en-IN');
-                },
-
-                openProductModal(product) {
-                    this.track('product_view', product.id, {placement:'modal'});
-                    this.selectedProduct = product;
-                    this.modalOpen = true;
-                },
-
-                showToast(msg) {
-                    this.toastMessage = msg;
-                    this.toastShow = true;
-                    setTimeout(() => { this.toastShow = false; }, 2500);
-                },
-                async sendWhatsAppOrder(whatsapp, shopName) {
-                    if (this.cart.length === 0) return;
-                    if (!this.customerName.trim() || this.customerPhone.replace(/\D/g,'').length < 10) {
-                        this.showToast('Please enter your name and valid mobile number.');
-                        return;
-                    }
-                    this.track('whatsapp_click', null, {placement:'cart_order', items:this.totalCartItems, total:this.cartTotal});
-                    try {
-                        await fetch(this.orderUrl, {
-                            method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'},
-                            body:JSON.stringify({
-                                customer_name:this.customerName.trim(), phone:this.customerPhone.replace(/\D/g,''),
-                                visitor_token:this.visitorToken,
-                                items:this.cart.map(i=>({product_id:i.id, qty:i.qty}))
-                            })
-                        });
-                    } catch(e) {}
-                    let text = `Hi ${shopName}! I am ${this.customerName}. I would like to place an order:
-
-`;
-                    this.cart.forEach((item, index) => {
-                        text += `${index + 1}. ${item.name} x ${item.qty} = ₹${(item.price * item.qty).toLocaleString('en-IN')}
-`;
-                    });
-                    text += `
-*Grand Total: ₹${this.formattedCartTotal}*
-
-Please confirm availability and payment details.`;
-                    const url = `https://wa.me/91${whatsapp}?text=${encodeURIComponent(text)}`;
-                    window.open(url, '_blank');
                 }
             }
         }
     </script>
+    
+    <style>
+        /* Glassmorphism */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        
+        /* Ultra Luxury Dark Gradient */
+        .luxury-hero {
+            background: radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.18) 0%, transparent 40%),
+                        radial-gradient(circle at 20% 80%, rgba(189, 21, 103, 0.3) 0%, transparent 50%),
+                        linear-gradient(145deg, #1C040E 0%, #3B091E 45%, #630F32 80%, #8C174A 100%);
+        }
+        
+        /* Card Hover Animations */
+        .product-card {
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .product-card:hover {
+            transform: translateY(-8px) scale(1.015);
+        }
+        .product-card:hover .product-img {
+            transform: scale(1.08);
+        }
+        .product-img {
+            transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Gold Shimmer Text */
+        .gold-shimmer {
+            background: linear-gradient(90deg, #F3E2A3 0%, #D4AF37 50%, #F3E2A3 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 4s linear infinite;
+        }
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-[#FAF8F9] text-gray-900 font-sans antialiased selection:bg-brand-500 selection:text-white pb-24 md:pb-12">
 
+    <!-- Top Luxury Navigation Bar -->
+    <header class="sticky top-0 z-50 glass-nav border-b border-gray-200/80 shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+            
+            <!-- Brand Logo & Showroom Title -->
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="relative group cursor-pointer">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-900 via-brand-700 to-brand-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-brand-900/25 ring-2 ring-gold-400/40">
+                        {{ strtoupper(substr($business->name ?? 'S', 0, 1)) }}
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center" title="Showroom is Open & Online">
+                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                    </span>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <h1 class="font-extrabold text-gray-950 text-base sm:text-xl leading-tight truncate tracking-tight">
+                            {{ $business->name ?? 'Showroom' }}
+                        </h1>
+                        <svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-gray-500 mt-0.5">
+                        <span class="text-brand-700 font-bold uppercase tracking-wider text-[10px] bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">
+                            {{ $business->business_type ?? 'Exclusive Boutique' }}
+                        </span>
+                        <span class="hidden sm:inline text-gray-400">•</span>
+                        <span class="truncate">{{ $business->city ?? 'Direct Showroom Collection' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header Action Center -->
+            <div class="flex items-center gap-2.5 flex-shrink-0">
+                <!-- Search Button (Mobile trigger) -->
+                <button onclick="document.getElementById('searchInput').focus(); window.scrollTo({top: 280, behavior: 'smooth'});" class="p-2.5 rounded-xl bg-white border border-gray-200/80 text-gray-600 hover:text-brand-700 hover:border-brand-200 transition shadow-sm md:hidden">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </button>
+
+                <!-- Share Button -->
+                <button onclick="shareShowroom()" class="p-2.5 rounded-xl bg-white border border-gray-200/80 text-gray-600 hover:text-brand-700 hover:border-brand-200 transition shadow-sm flex items-center gap-1.5 text-xs font-bold" title="Share Showroom with Friends">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                    </svg>
+                    <span class="hidden lg:inline">Share</span>
+                </button>
+
+                <!-- Cart Drawer Trigger -->
+                <button onclick="toggleCartDrawer(true)" class="relative p-2.5 sm:px-4 rounded-xl bg-white border border-gray-200/90 text-gray-900 hover:border-brand-300 hover:text-brand-700 transition shadow-sm flex items-center gap-2 text-sm font-extrabold group">
+                    <div class="relative">
+                        <svg class="w-5 h-5 text-gray-700 group-hover:text-brand-700 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                        <span id="cart-badge-count" class="hidden absolute -top-2.5 -right-2.5 bg-brand-700 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-white shadow-md">
+                            0
+                        </span>
+                    </div>
+                    <span class="hidden sm:inline">Bag</span>
+                    <span id="cart-header-total" class="hidden sm:inline text-xs text-brand-700 font-bold bg-brand-50 px-2 py-0.5 rounded-md">₹0</span>
+                </button>
+
+                <!-- WhatsApp Direct Connect -->
+                @if(!empty($business->whatsapp))
+                <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}?text={{ urlencode('Hi '.$business->name.', I am viewing your online showroom catalogue.') }}" target="_blank" class="p-2.5 sm:px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-sm shadow-md shadow-emerald-500/25 transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-95">
+                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.058-2.146-.541-1.849-.766-3.037-2.65-3.13-2.774-.093-.124-.741-.986-.741-1.88 0-.894.469-1.333.636-1.514.167-.181.365-.227.486-.227.121 0 .243.001.35.006.113.005.263-.043.411.312.155.372.529 1.288.575 1.381.046.093.077.202.015.325-.062.124-.093.202-.185.31-.093.109-.196.243-.28.326-.093.093-.19.194-.082.38.108.186.482.795 1.034 1.288.71.636 1.309.833 1.495.926.186.093.295.078.404-.047.109-.124.465-.541.589-.727.124-.186.248-.155.419-.093.17.062 1.082.51 1.268.603.186.093.31.14.356.217.046.078.046.45-.098.855z"/>
+                    </svg>
+                    <span class="hidden md:inline">Contact</span>
+                </a>
+                @endif
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Ultra Luxury Hero Section -->
+    <section class="luxury-hero text-white pt-14 pb-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <!-- Ambient Decorative Rings -->
+        <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-gold-500/10 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-brand-500/20 blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-4xl mx-auto text-center relative z-10">
+            <!-- Luxury Pill Badge -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-xs font-black uppercase tracking-widest mb-5 shadow-inner">
+                <span class="w-2 h-2 rounded-full bg-gold-400 animate-pulse"></span>
+                <span class="gold-shimmer font-serif tracking-widest">{{ $business->business_type ?? 'EXCLUSIVE LUXURY SHOWROOM' }}</span>
+            </div>
+
+            <!-- Hero Headline -->
+            <h2 class="text-3xl sm:text-5xl lg:text-6xl font-serif font-black tracking-tight text-white mb-4 leading-tight">
+                {{ $business->name ?? 'Pocket Showroom' }}
+            </h2>
+
+            <p class="text-pink-100/90 text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed mb-8 font-medium">
+                {{ $business->about ?? 'Explore our hand-crafted masterpieces, verified collections, and place instant orders directly with the showroom owner on WhatsApp.' }}
+            </p>
+
+            <!-- Search & Live Filter Bar -->
+            <div class="max-w-2xl mx-auto relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-gold-400 via-pink-500 to-brand-500 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
+                <div class="relative flex items-center bg-white rounded-2xl shadow-2xl p-1.5">
+                    <div class="pl-3.5 pr-2 text-gray-400">
+                        <svg class="w-6 h-6 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input type="text" id="searchInput" onkeyup="filterLiveCatalog()" placeholder="Search jewelry, diamonds, collections, or price..." class="w-full py-3.5 text-gray-900 placeholder-gray-400 font-semibold text-sm sm:text-base focus:outline-none bg-transparent">
+                    <button onclick="clearSearch()" id="clearSearchBtn" class="hidden pr-3 text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Features Quick Badges -->
+            <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-8 text-xs font-bold text-pink-200/90">
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-gold-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <span>100% Genuine Certified</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-gold-400" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/><path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/></svg>
+                    <span>Transparent Pricing</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+                    <span>Instant WhatsApp Booking</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Category Slider -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-9 relative z-20">
+        <div class="bg-white/95 backdrop-blur-xl p-3 rounded-2xl shadow-luxury border border-gray-200/90 flex items-center gap-2.5 overflow-x-auto no-scrollbar">
+            <button onclick="filterCategory('all', this)" class="cat-pill active-cat px-6 py-3 rounded-xl bg-gradient-to-r from-brand-900 to-brand-700 text-white font-extrabold text-xs sm:text-sm whitespace-nowrap shadow-md shadow-brand-900/20 transition-all">
+                ✨ All Items ({{ count($products ?? []) }})
+            </button>
+            @foreach($categories ?? [] as $cat)
+            @php $cname = is_string($cat) ? $cat : ($cat->name ?? 'Category'); @endphp
+            <button onclick="filterCategory('{{ strtolower($cname) }}', this)" class="cat-pill px-5 py-3 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 font-bold text-xs sm:text-sm whitespace-nowrap transition-all">
+                {{ $cname }}
+            </button>
+            @endforeach
+        </div>
+    </div>
+
+    <!-- Live Catalogue Main Section -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+        
+        <!-- Header Bar with Count -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h3 id="catalog-title" class="font-serif font-black text-2xl sm:text-3xl text-gray-950 tracking-tight">
+                    Exclusive Collection
+                </h3>
+                <p class="text-xs sm:text-sm text-gray-500 font-medium mt-1">Showing all live verified items available for order</p>
+            </div>
+            <span id="product-count-badge" class="bg-brand-50 border border-brand-100 text-brand-800 text-xs sm:text-sm font-extrabold px-3.5 py-1.5 rounded-xl">
+                {{ count($products ?? []) }} items
+            </span>
+        </div>
+
+        <!-- Luxury Product Grid -->
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            @forelse($products ?? [] as $product)
+            @php
+                $img = !empty($product->images) && count($product->images) > 0 ? $product->images[0]->path : null;
+                if ($img && !str_starts_with($img, 'http')) {
+                    $img = asset('storage/'.$img);
+                }
+                $hasOffer = !empty($product->offer_price) && $product->offer_price < $product->price;
+                $selling = $hasOffer ? $product->offer_price : $product->price;
+                $discount = $hasOffer ? round((($product->price - $product->offer_price) / $product->price) * 100) : 0;
+                $catName = $product->category->name ?? 'Exclusive';
+            @endphp
+            
+            <div class="product-card group bg-white rounded-3xl border border-gray-200/90 shadow-sm hover:shadow-card-hover overflow-hidden flex flex-col justify-between"
+                 data-id="{{ $product->id }}"
+                 data-name="{{ strtolower($product->name) }}"
+                 data-category="{{ strtolower($catName) }}"
+                 data-price="{{ $selling }}"
+                 data-img="{{ $img ?? '' }}"
+                 data-desc="{{ $product->description ?? '' }}"
+                 data-original-price="{{ $product->price }}">
+                
+                <!-- Image Container with Aspect Ratio & Badges -->
+                <div class="relative w-full aspect-[4/4.2] bg-gradient-to-br from-gray-50 to-pink-50/40 overflow-hidden cursor-pointer" onclick="openQuickView({{ $product->id }})">
+                    @if($img)
+                        <img src="{{ $img }}" alt="{{ $product->name }}" loading="lazy" class="product-img w-full h-full object-cover" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&auto=format&fit=crop&q=80';">
+                    @else
+                        <div class="w-full h-full flex flex-col items-center justify-center text-brand-700 bg-gradient-to-br from-brand-50/60 to-gold-50/40">
+                            <div class="w-14 h-14 rounded-2xl bg-brand-100/60 flex items-center justify-center shadow-inner">
+                                <svg class="w-7 h-7 text-brand-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-extrabold mt-2 tracking-wider uppercase text-brand-900 font-serif">Showroom Item</span>
+                        </div>
+                    @endif
+
+                    <!-- Floating Discount Badge -->
+                    @if($hasOffer)
+                    <div class="absolute top-3 left-3 bg-gradient-to-r from-rose-600 to-pink-600 text-white text-[10px] sm:text-xs font-black px-2.5 py-1 rounded-xl shadow-md flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+                        <span>{{ $discount }}% OFF</span>
+                    </div>
+                    @endif
+
+                    <!-- Featured Star Badge -->
+                    @if(!empty($product->featured))
+                    <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md p-1.5 rounded-xl shadow-sm text-gold-500">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                    </div>
+                    @endif
+
+                    <!-- Quick View Overlay on Hover -->
+                    <div class="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                        <span class="bg-white/95 backdrop-blur-md text-gray-900 text-xs font-black px-4 py-2 rounded-xl shadow-lg transform translate-y-2 group-hover:translate-y-0 transition">
+                            🔍 Quick View
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Product Details Body -->
+                <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] font-black text-brand-700 tracking-wider uppercase bg-brand-50 px-2 py-0.5 rounded-md border border-brand-100/60">
+                            {{ $catName }}
+                        </span>
+                        <h4 class="font-extrabold text-gray-950 text-sm sm:text-base line-clamp-1 mt-2 group-hover:text-brand-700 transition" title="{{ $product->name }}">
+                            {{ $product->name }}
+                        </h4>
+                        @if(!empty($product->description))
+                        <p class="text-gray-500 text-xs line-clamp-2 mt-1 leading-relaxed font-medium">
+                            {{ $product->description }}
+                        </p>
+                        @endif
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-gray-100">
+                        <!-- Pricing -->
+                        <div class="flex items-baseline gap-2 mb-3.5">
+                            <span class="text-lg sm:text-xl font-black text-gray-950">
+                                ₹{{ number_format($selling) }}
+                            </span>
+                            @if($hasOffer)
+                            <span class="text-xs text-gray-400 line-through font-bold">
+                                ₹{{ number_format($product->price) }}
+                            </span>
+                            @endif
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addToBag({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $selling }}, '{{ $img ?? '' }}')" class="py-2.5 px-2 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-800 font-extrabold text-xs transition active:scale-95 flex items-center justify-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                <span>Add Bag</span>
+                            </button>
+                            <button onclick="instantBuyWhatsApp('{{ addslashes($product->name) }}', {{ $selling }}, '{{ $img ?? '' }}')" class="py-2.5 px-2 rounded-xl bg-gradient-to-r from-brand-900 to-brand-700 hover:from-brand-950 hover:to-brand-800 text-white font-extrabold text-xs shadow-md shadow-brand-900/20 transition active:scale-95 flex items-center justify-center gap-1">
+                                <span>Buy Now</span>
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            @empty
+            <div class="col-span-full py-20 text-center bg-white rounded-3xl border border-gray-100 shadow-sm">
+                <div class="w-20 h-20 bg-brand-50 text-brand-700 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                    </svg>
+                </div>
+                <h4 class="font-serif font-black text-gray-950 text-xl">Showroom Catalogue Updating</h4>
+                <p class="text-sm text-gray-500 max-w-md mx-auto mt-2 font-medium">
+                    The owner is currently uploading fresh collections. Please check back in a moment or chat directly on WhatsApp.
+                </p>
+                @if(!empty($business->whatsapp))
+                <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}" target="_blank" class="inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-2xl bg-emerald-500 text-white font-extrabold text-sm shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 transition">
+                    💬 WhatsApp Showroom
+                </a>
+                @endif
+            </div>
+            @endforelse
+        </div>
+
+    </main>
+
+    <!-- Slide-Over Cart Drawer -->
+    <div id="cart-overlay" onclick="toggleCartDrawer(false)" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    
+    <aside id="cart-drawer" class="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-out flex flex-col">
+        <!-- Drawer Header -->
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                </div>
+                <div>
+                    <h3 class="font-serif font-black text-lg text-gray-950">Shopping Bag</h3>
+                    <p class="text-xs text-gray-500 font-semibold" id="cart-drawer-subtitle">0 items added</p>
+                </div>
+            </div>
+            <button onclick="toggleCartDrawer(false)" class="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <!-- Drawer Item List -->
+        <div id="cart-items-container" class="p-6 flex-1 overflow-y-auto space-y-4">
+            <!-- Rendered by JavaScript -->
+        </div>
+
+        <!-- Drawer Footer with Instant WhatsApp Checkout -->
+        <div class="p-6 border-t border-gray-100 bg-gray-50 space-y-4">
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs font-semibold text-gray-500">
+                    <span>Subtotal</span>
+                    <span id="cart-drawer-subtotal">₹0</span>
+                </div>
+                <div class="flex justify-between text-xs font-semibold text-emerald-600">
+                    <span>Showroom WhatsApp Booking</span>
+                    <span>FREE</span>
+                </div>
+                <div class="border-t border-gray-200 pt-2 flex justify-between text-base font-black text-gray-950">
+                    <span>Total Amount</span>
+                    <span id="cart-drawer-total" class="text-brand-700 text-xl">₹0</span>
+                </div>
+            </div>
+
+            <!-- Customer Details Input -->
+            <div class="space-y-2.5 pt-2">
+                <input type="text" id="custName" placeholder="Your Name (e.g. Rahul Sharma)" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <input type="tel" id="custPhone" placeholder="Your WhatsApp Mobile Number" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+
+            <button onclick="submitCartOrderWhatsApp()" class="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-sm shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 transition active:scale-95">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.058-2.146-.541-1.849-.766-3.037-2.65-3.13-2.774-.093-.124-.741-.986-.741-1.88 0-.894.469-1.333.636-1.514.167-.181.365-.227.486-.227.121 0 .243.001.35.006.113.005.263-.043.411.312.155.372.529 1.288.575 1.381.046.093.077.202.015.325-.062.124-.093.202-.185.31-.093.109-.196.243-.28.326-.093.093-.19.194-.082.38.108.186.482.795 1.034 1.288.71.636 1.309.833 1.495.926.186.093.295.078.404-.047.109-.124.465-.541.589-.727.124-.186.248-.155.419-.093.17.062 1.082.51 1.268.603.186.093.31.14.356.217.046.078.046.45-.098.855z"/>
+                </svg>
+                <span>Order on WhatsApp Now</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Quick View Product Modal -->
+    <div id="quickview-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
+            <button onclick="closeQuickView()" class="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center text-gray-500 hover:text-gray-900 transition">
+                ✕
+            </button>
+            <div class="relative w-full aspect-square bg-gray-100">
+                <img id="qv-img" src="" alt="" class="w-full h-full object-cover">
+            </div>
+            <div class="p-6">
+                <span id="qv-cat" class="text-[10px] font-black text-brand-700 tracking-wider uppercase bg-brand-50 px-2.5 py-1 rounded-md"></span>
+                <h3 id="qv-title" class="font-serif font-black text-xl text-gray-950 mt-2"></h3>
+                <p id="qv-desc" class="text-gray-600 text-xs sm:text-sm mt-2 leading-relaxed font-medium"></p>
+                <div class="mt-4 flex items-baseline gap-2">
+                    <span id="qv-price" class="text-2xl font-black text-gray-950"></span>
+                    <span id="qv-orig-price" class="text-sm text-gray-400 line-through font-bold"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button id="qv-add-btn" class="py-3.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-800 font-extrabold text-sm transition">
+                        + Add to Bag
+                    </button>
+                    <button id="qv-buy-btn" class="py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-extrabold text-sm shadow-md transition">
+                        Order on WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating WhatsApp Quick Button (Mobile) -->
+    @if(!empty($business->whatsapp))
+    <aside class="fixed bottom-5 right-5 z-40 md:hidden">
+        <a href="https://wa.me/91{{ preg_replace('/[^0-9]/', '', $business->whatsapp) }}" target="_blank" class="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-white flex items-center justify-center shadow-xl shadow-emerald-600/40 ring-4 ring-white animate-bounce">
+            <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.058-2.146-.541-1.849-.766-3.037-2.65-3.13-2.774-.093-.124-.741-.986-.741-1.88 0-.894.469-1.333.636-1.514.167-.181.365-.227.486-.227.121 0 .243.001.35.006.113.005.263-.043.411.312.155.372.529 1.288.575 1.381.046.093.077.202.015.325-.062.124-.093.202-.185.31-.093.109-.196.243-.28.326-.093.093-.19.194-.082.38.108.186.482.795 1.034 1.288.71.636 1.309.833 1.495.926.186.093.295.078.404-.047.109-.124.465-.541.589-.727.124-.186.248-.155.419-.093.17.062 1.082.51 1.268.603.186.093.31.14.356.217.046.078.046.45-.098.855z"/>
+            </svg>
+        </a>
+    </aside>
+    @endif
+
+    <!-- Core Interactive Client JavaScript -->
+    <script>
+        const SHOP_NAME = "{{ addslashes($business->name ?? 'Showroom') }}";
+        const SHOP_WHATSAPP = "{{ preg_replace('/[^0-9]/', '', $business->whatsapp ?? '') }}";
+        let bag = JSON.parse(localStorage.getItem('ps_bag_items') || '[]');
+
+        function updateBagUI() {
+            const count = bag.reduce((sum, item) => sum + item.qty, 0);
+            const total = bag.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            // Badges
+            const badge = document.getElementById('cart-badge-count');
+            const totalLabel = document.getElementById('cart-header-total');
+            if (count > 0) {
+                badge.innerText = count;
+                badge.classList.remove('hidden');
+                totalLabel.innerText = '₹' + total.toLocaleString('en-IN');
+                totalLabel.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                totalLabel.classList.add('hidden');
+            }
+
+            // Drawer Items
+            document.getElementById('cart-drawer-subtitle').innerText = `${count} items in your bag`;
+            document.getElementById('cart-drawer-subtotal').innerText = '₹' + total.toLocaleString('en-IN');
+            document.getElementById('cart-drawer-total').innerText = '₹' + total.toLocaleString('en-IN');
+
+            const container = document.getElementById('cart-items-container');
+            if (bag.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        </div>
+                        <h4 class="font-extrabold text-gray-900">Your bag is empty</h4>
+                        <p class="text-xs text-gray-500 mt-1">Explore our collections and add items.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = bag.map(item => `
+                    <div class="flex items-center gap-3.5 p-3 rounded-2xl border border-gray-100 bg-gray-50/50">
+                        <img src="${item.img || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200'}" class="w-16 h-16 rounded-xl object-cover flex-shrink-0 bg-white" onerror="this.src='https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=200'">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-extrabold text-gray-900 text-xs sm:text-sm truncate">${item.name}</h4>
+                            <p class="text-xs font-black text-brand-700 mt-0.5">₹${item.price.toLocaleString('en-IN')}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="changeQty(${item.id}, -1)" class="w-6 h-6 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-xs hover:bg-gray-100">-</button>
+                                <span class="text-xs font-black">${item.qty}</span>
+                                <button onclick="changeQty(${item.id}, 1)" class="w-6 h-6 rounded-lg bg-white border border-gray-200 flex items-center justify-center font-bold text-xs hover:bg-gray-100">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeFromBag(${item.id})" class="text-gray-400 hover:text-rose-600 p-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            localStorage.setItem('ps_bag_items', JSON.stringify(bag));
+        }
+
+        function addToBag(id, name, price, img) {
+            const found = bag.find(x => x.id === id);
+            if (found) {
+                found.qty++;
+            } else {
+                bag.push({ id, name, price, img, qty: 1 });
+            }
+            updateBagUI();
+            toggleCartDrawer(true);
+        }
+
+        function changeQty(id, delta) {
+            const found = bag.find(x => x.id === id);
+            if (!found) return;
+            found.qty += delta;
+            if (found.qty <= 0) {
+                bag = bag.filter(x => x.id !== id);
+            }
+            updateBagUI();
+        }
+
+        function removeFromBag(id) {
+            bag = bag.filter(x => x.id !== id);
+            updateBagUI();
+        }
+
+        function toggleCartDrawer(open) {
+            const overlay = document.getElementById('cart-overlay');
+            const drawer = document.getElementById('cart-drawer');
+            if (open) {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100');
+                drawer.classList.remove('translate-x-full');
+            } else {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                overlay.classList.remove('opacity-100');
+                drawer.classList.add('translate-x-full');
+            }
+        }
+
+        function instantBuyWhatsApp(name, price, img) {
+            const msg = `💎 *ORDER INQUIRY - ${SHOP_NAME}*\n\n` +
+                        `I want to buy:\n` +
+                        `✨ *${name}*\n` +
+                        `💰 *Price:* ₹${price.toLocaleString('en-IN')}\n\n` +
+                        `Please share stock availability and payment details.`;
+            window.open(`https://wa.me/91${SHOP_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function submitCartOrderWhatsApp() {
+            if (bag.length === 0) {
+                alert('Your bag is empty! Please add items first.');
+                return;
+            }
+            const name = document.getElementById('custName').value.trim() || 'Customer';
+            const phone = document.getElementById('custPhone').value.trim();
+            const total = bag.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            let msg = `🛍️ *NEW SHOWROOM ORDER from ${name}*\n` +
+                      (phone ? `📞 Phone: +91 ${phone}\n` : '') +
+                      `🏬 Showroom: ${SHOP_NAME}\n\n` +
+                      `*ORDERED ITEMS:*\n`;
+
+            bag.forEach((item, i) => {
+                msg += `${i+1}. *${item.name}* (x${item.qty}) — ₹${(item.price * item.qty).toLocaleString('en-IN')}\n`;
+            });
+
+            msg += `\n💵 *TOTAL AMOUNT:* ₹${total.toLocaleString('en-IN')}\n\n` +
+                   `Please confirm this order and dispatch details.`;
+
+            window.open(`https://wa.me/91${SHOP_WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        function shareShowroom() {
+            if (navigator.share) {
+                navigator.share({
+                    title: SHOP_NAME + ' Live Showroom',
+                    text: `Explore exclusive collections from ${SHOP_NAME} online!`,
+                    url: window.location.href,
+                });
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                alert('Showroom link copied to clipboard!');
+            }
+        }
+
+        function filterCategory(cat, btn) {
+            document.querySelectorAll('.cat-pill').forEach(b => {
+                b.className = 'cat-pill px-5 py-3 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 text-gray-700 font-bold text-xs sm:text-sm whitespace-nowrap transition-all';
+            });
+            btn.className = 'cat-pill active-cat px-6 py-3 rounded-xl bg-gradient-to-r from-brand-900 to-brand-700 text-white font-extrabold text-xs sm:text-sm whitespace-nowrap shadow-md shadow-brand-900/20 transition-all';
+
+            const cards = document.querySelectorAll('.product-card');
+            let visibleCount = 0;
+            cards.forEach(c => {
+                const itemCat = c.getAttribute('data-category');
+                const show = (cat === 'all' || itemCat.includes(cat));
+                c.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            document.getElementById('product-count-badge').innerText = `${visibleCount} items`;
+        }
+
+        function filterLiveCatalog() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const clearBtn = document.getElementById('clearSearchBtn');
+            clearBtn.classList.toggle('hidden', query.length === 0);
+
+            const cards = document.querySelectorAll('.product-card');
+            let visibleCount = 0;
+            cards.forEach(c => {
+                const name = c.getAttribute('data-name');
+                const cat = c.getAttribute('data-category');
+                const show = name.includes(query) || cat.includes(query);
+                c.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+            document.getElementById('product-count-badge').innerText = `${visibleCount} items`;
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterLiveCatalog();
+        }
+
+        function openQuickView(productId) {
+            const card = document.querySelector(`.product-card[data-id="${productId}"]`);
+            if (!card) return;
+            const name = card.querySelector('h4').innerText;
+            const cat = card.getAttribute('data-category');
+            const price = card.getAttribute('data-price');
+            const origPrice = card.getAttribute('data-original-price');
+            const desc = card.getAttribute('data-desc');
+            const img = card.getAttribute('data-img');
+
+            document.getElementById('qv-img').src = img || 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600';
+            document.getElementById('qv-cat').innerText = cat.toUpperCase();
+            document.getElementById('qv-title').innerText = name;
+            document.getElementById('qv-desc').innerText = desc || 'Exclusive genuine item from our verified live showroom collection.';
+            document.getElementById('qv-price').innerText = '₹' + Number(price).toLocaleString('en-IN');
+            
+            const origEl = document.getElementById('qv-orig-price');
+            if (origPrice && Number(origPrice) > Number(price)) {
+                origEl.innerText = '₹' + Number(origPrice).toLocaleString('en-IN');
+                origEl.classList.remove('hidden');
+            } else {
+                origEl.classList.add('hidden');
+            }
+
+            document.getElementById('qv-add-btn').onclick = () => {
+                addToBag(productId, name, Number(price), img);
+                closeQuickView();
+            };
+            document.getElementById('qv-buy-btn').onclick = () => {
+                instantBuyWhatsApp(name, Number(price), img);
+                closeQuickView();
+            };
+
+            document.getElementById('quickview-modal').classList.remove('hidden');
+        }
+
+        function closeQuickView() {
+            document.getElementById('quickview-modal').classList.add('hidden');
+        }
+
+        // Initialize UI
+        updateBagUI();
+    </script>
 </body>
 </html>
