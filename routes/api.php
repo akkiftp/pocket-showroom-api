@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CustomerContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\InquiryController;
+use App\Http\Controllers\Api\MarketplaceController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\PublicShowroomController;
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn()=>response()->json(['ok'=>true,'service'=>'Showmora API','auth_mode'=>config('pocket_showroom.auth_driver'),'free_mode'=>(bool)config('pocket_showroom.free_mode'),'timestamp'=>now()->toIso8601String()]));
 Route::prefix('auth')->group(fn()=>Route::post('/firebase-login',[AuthController::class,'firebaseLogin'])->middleware('throttle:10,1'));
+
+Route::get('/marketplace/home', [MarketplaceController::class, 'home']);
+Route::get('/marketplace/shops', [MarketplaceController::class, 'shops']);
 
 Route::prefix('public/showrooms/{slug}')->group(function(){
     Route::get('/',[PublicShowroomController::class,'show']);
