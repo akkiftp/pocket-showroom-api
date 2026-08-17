@@ -82,17 +82,24 @@ class ProductController extends Controller
         $business = $this->business($request);
         $data = $this->validatePayload($request);
 
-        if (!empty($data['category_id'])) {
+        $categoryId = $data['category_id'] ?? null;
+        $categoryName = trim((string) ($request->input('category_name') ?? $request->input('category') ?? ''));
+        if (!$categoryId && $categoryName !== '') {
+            $cat = Category::firstOrCreate(
+                ['business_id' => $business->id, 'name' => $categoryName],
+                ['sort_order' => 0, 'is_active' => true]
+            );
+            $categoryId = $cat->id;
+        } elseif ($categoryId) {
             $validCategory = Category::where('business_id', $business->id)
-                ->whereKey($data['category_id'])
+                ->whereKey($categoryId)
                 ->exists();
-
             if (!$validCategory) {
-                $data['category_id'] = null;
+                $categoryId = null;
             }
         }
 
-        return DB::transaction(function () use ($request, $business, $data) {
+        return DB::transaction(function () use ($request, $business, $data, $categoryId) {
             $base = Str::slug($data['name']) ?: 'product';
             $slug = $base;
             $i = 2;
@@ -101,7 +108,7 @@ class ProductController extends Controller
             }
 
             $product = $business->products()->create([
-                'category_id' => $data['category_id'] ?? null,
+                'category_id' => $categoryId,
                 'name' => $data['name'],
                 'slug' => $slug,
                 'sku' => $data['sku'] ?? null,
@@ -138,14 +145,24 @@ class ProductController extends Controller
         $business = $this->business($request);
         $data = $this->validatePayload($request, $product);
 
-        if (!empty($data['category_id'])) {
+        $categoryId = $data['category_id'] ?? null;
+        $categoryName = trim((string) ($request->input('category_name') ?? $request->input('category') ?? ''));
+        if (!$categoryId && $categoryName !== '') {
+            $cat = Category::firstOrCreate(
+                ['business_id' => $business->id, 'name' => $categoryName],
+                ['sort_order' => 0, 'is_active' => true]
+            );
+            $categoryId = $cat->id;
+        } elseif ($categoryId) {
             $validCategory = Category::where('business_id', $business->id)
-                ->whereKey($data['category_id'])
+                ->whereKey($categoryId)
                 ->exists();
-
             if (!$validCategory) {
-                return response()->json(['message' => 'Invalid category for this business.'], 422);
+                $categoryId = null;
             }
+        }
+        if ($categoryId !== null || $request->has('category_id') || $request->has('category')) {
+            $data['category_id'] = $categoryId;
         }
 
         return DB::transaction(function () use ($request, $product, $data) {
@@ -180,14 +197,7 @@ class ProductController extends Controller
         $product = $this->owned($request, $product);
 
         foreach ($product->images as $image) {
-            if (Str::startsWith($image->path, 'http')) {
-                // If it's a Cloudinary URL, we can delete by public_id if needed, but for now we skip local deletion
-                try {
-                    $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
-                    // Extract public ID from URL (basic extraction, optional step)
-                    // We'll leave it in Cloudinary for safety or implement proper public_id extraction later
-                } catch (\Exception $e) {}
-            } else {
+            if (!Str::startsWith($image->path, 'http')) {
                 Storage::disk('public')->delete($image->path);
             }
         }
@@ -226,12 +236,7 @@ class ProductController extends Controller
         $product = $this->owned($request, $product);
         abort_unless($image->product_id === $product->id, 404);
 
-        if (Str::startsWith($image->path, 'http')) {
-            try {
-                $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
-                // Extraction of public ID could be done here if strictly needed
-            } catch (\Exception $e) {}
-        } else {
+        if (!Str::startsWith($image->path, 'http')) {
             Storage::disk('public')->delete($image->path);
         }
         $image->delete();
@@ -249,7 +254,15 @@ class ProductController extends Controller
 
     private function storeImages(Request $request, Product $product): void
     {
-        if (!$request->hasFile('images')) {
+        $files = [];
+        if ($request->hasFile('images')) {
+            $f = $request->file('images');
+            $files = is_array($f) ? $f : [$f];
+        } elseif ($request->hasFile('image')) {
+            $files = [$request->file('image')];
+        }
+
+        if (empty($files)) {
             return;
         }
 
@@ -265,7 +278,8 @@ class ProductController extends Controller
             $rawCloudinary = trim($rawCloudinary, '"\'');
         }
 
-        foreach ($request->file('images', []) as $file) {
+        foreach ($files as $file) {
+            if (!$file) continue;
             $path = null;
             if ($rawCloudinary && str_starts_with($rawCloudinary, 'cloudinary://')) {
                 try {
@@ -286,6 +300,7 @@ class ProductController extends Controller
                 $saved = $file->store("businesses/{$product->business_id}/products/{$product->id}", 'public');
                 $appUrl = env('APP_URL') ?: 'https://pocket-showroom-api.onrender.com';
                 $appUrl = rtrim($appUrl, '/');
+                $appUrl = str_replace('http://', 'https://', $appUrl);
                 $path = $appUrl . '/storage/' . $saved;
             }
 
