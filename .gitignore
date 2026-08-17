@@ -27,3 +27,17 @@ Homestead.yaml
 Thumbs.db
 *.sqlite
 *.sqlite-journal
+
+# Flutter artifacts in backend folder
+*.zip
+/android/
+/ios/
+/lib/
+/web/
+/test/
+pubspec.*
+*.iml
+scratch/
+scratch_*
+FINAL_CHECK_REPORT.txt
+

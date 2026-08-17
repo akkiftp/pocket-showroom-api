@@ -16,10 +16,21 @@ use App\Http\Controllers\Api\PublicShowroomController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\TrackingController;
+use App\Http\Controllers\Api\MarketplaceController;
+use App\Http\Controllers\Api\MarketplaceAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn()=>response()->json(['ok'=>true,'service'=>'Showmora API','auth_mode'=>config('pocket_showroom.auth_driver'),'free_mode'=>(bool)config('pocket_showroom.free_mode'),'timestamp'=>now()->toIso8601String()]));
 Route::prefix('auth')->group(fn()=>Route::post('/firebase-login',[AuthController::class,'firebaseLogin'])->middleware('throttle:10,1'));
+Route::prefix('marketplace')->group(function(){
+    Route::get('/home',[MarketplaceController::class,'home']);
+    Route::get('/categories',[MarketplaceController::class,'categories']);
+    Route::get('/locations',[MarketplaceController::class,'locations']);
+    Route::get('/shops',[MarketplaceController::class,'shops']);
+    Route::get('/shops/{slug}',[MarketplaceController::class,'shop']);
+    Route::get('/search',[MarketplaceController::class,'search']);
+});
+
 
 Route::get('/marketplace/home', [MarketplaceController::class, 'home']);
 Route::get('/marketplace/shops', [MarketplaceController::class, 'shops']);
@@ -41,6 +52,15 @@ Route::middleware('auth:sanctum')->group(function(){
     // Platform Super Admin: no business ownership; controls all shops/owners.
     Route::prefix('admin')->middleware('admin')->group(function(){
         Route::get('/overview',[AdminController::class,'overview']);
+        Route::get('/marketplace/categories',[MarketplaceAdminController::class,'categories']);
+        Route::post('/marketplace/categories',[MarketplaceAdminController::class,'storeCategory']);
+        Route::match(['put','patch'],'/marketplace/categories/{category}',[MarketplaceAdminController::class,'updateCategory']);
+        Route::delete('/marketplace/categories/{category}',[MarketplaceAdminController::class,'destroyCategory']);
+        Route::get('/marketplace/locations',[MarketplaceAdminController::class,'locations']);
+        Route::post('/marketplace/locations',[MarketplaceAdminController::class,'storeLocation']);
+        Route::match(['put','patch'],'/marketplace/locations/{location}',[MarketplaceAdminController::class,'updateLocation']);
+        Route::delete('/marketplace/locations/{location}',[MarketplaceAdminController::class,'destroyLocation']);
+        Route::patch('/marketplace/shops/{business}',[MarketplaceAdminController::class,'updateShop']);
         Route::get('/users',[AdminController::class,'users']);
         Route::get('/businesses/{business}/analytics',[AdminController::class,'businessAnalytics']);
         Route::post('/users/{id}/activate',[AdminController::class,'activate']);

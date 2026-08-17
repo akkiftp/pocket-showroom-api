@@ -16,7 +16,13 @@ class BusinessController extends Controller
         abort_unless($request->user()->isShopOwner(),403,'Only a Shop Owner can create a showroom.');
         abort_if(Business::where('user_id',$request->user()->id)->exists(),422,'This owner already has a showroom.');
         $data=$request->validate([
-            'name'=>['required','string','max:150'],'business_type'=>['nullable','string','max:100'],'city'=>['nullable','string','max:100'],
+            'name'=>['required','string','max:150'],'business_type'=>['nullable','string','max:100'],
+            'marketplace_category_id'=>['nullable','integer','exists:marketplace_categories,id'],
+            'city'=>['nullable','string','max:100'],'location_id'=>['nullable','integer','exists:marketplace_locations,id'],
+            'locality'=>['nullable','string','max:150'],'pincode'=>['nullable','string','max:12'],
+            'latitude'=>['nullable','numeric','between:-90,90'],'longitude'=>['nullable','numeric','between:-180,180'],
+            'opening_time'=>['nullable','date_format:H:i'],'closing_time'=>['nullable','date_format:H:i'],
+            'delivery_available'=>['nullable','boolean'],'accepts_orders'=>['nullable','boolean'],
             'address'=>['nullable','string','max:1000'],'whatsapp'=>['nullable','string','max:20'],'phone'=>['nullable','string','max:20'],
             'email'=>['nullable','email','max:190'],'about'=>['nullable','string','max:3000'],
         ]);
@@ -30,7 +36,13 @@ class BusinessController extends Controller
         abort_unless($request->user()->canDo('business.update'),403);
         $business=$this->business($request);
         $data=$request->validate([
-            'name'=>['sometimes','required','string','max:150'],'business_type'=>['nullable','string','max:100'],'city'=>['nullable','string','max:100'],
+            'name'=>['sometimes','required','string','max:150'],'business_type'=>['nullable','string','max:100'],
+            'marketplace_category_id'=>['nullable','integer','exists:marketplace_categories,id'],
+            'city'=>['nullable','string','max:100'],'location_id'=>['nullable','integer','exists:marketplace_locations,id'],
+            'locality'=>['nullable','string','max:150'],'pincode'=>['nullable','string','max:12'],
+            'latitude'=>['nullable','numeric','between:-90,90'],'longitude'=>['nullable','numeric','between:-180,180'],
+            'opening_time'=>['nullable','date_format:H:i'],'closing_time'=>['nullable','date_format:H:i'],
+            'delivery_available'=>['nullable','boolean'],'accepts_orders'=>['nullable','boolean'],
             'address'=>['nullable','string','max:1000'],'whatsapp'=>['nullable','string','max:20'],'phone'=>['nullable','string','max:20'],
             'email'=>['nullable','email','max:190'],'about'=>['nullable','string','max:3000'],'is_active'=>['sometimes','boolean'],
         ]);

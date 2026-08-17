@@ -14,7 +14,20 @@ class Business extends Model
         'name',
         'slug',
         'business_type',
+        'marketplace_category_id',
         'city',
+        'location_id',
+        'locality',
+        'pincode',
+        'latitude',
+        'longitude',
+        'opening_time',
+        'closing_time',
+        'delivery_available',
+        'accepts_orders',
+        'is_verified',
+        'is_featured',
+        'marketplace_views',
         'address',
         'whatsapp',
         'phone',
@@ -29,6 +42,12 @@ class Business extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'delivery_available' => 'boolean',
+        'accepts_orders' => 'boolean',
+        'is_verified' => 'boolean',
+        'is_featured' => 'boolean',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     protected $appends = [
@@ -40,6 +59,9 @@ class Business extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function marketplaceCategory() { return $this->belongsTo(MarketplaceCategory::class, 'marketplace_category_id'); }
+    public function marketplaceLocation() { return $this->belongsTo(MarketplaceLocation::class, 'location_id'); }
 
     public function categories()
     {
