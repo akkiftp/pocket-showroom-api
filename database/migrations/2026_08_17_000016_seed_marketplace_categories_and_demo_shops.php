@@ -16,14 +16,35 @@ return new class extends Migration
     public function up(): void
     {
         // 1. Seed standard locations
-        $locFatehpur = MarketplaceLocation::firstOrCreate(
+        DB::table('marketplace_locations')->updateOrInsert(
             ['slug' => 'fatehpur-up'],
-            ['name' => 'Fatehpur', 'district' => 'Fatehpur', 'state' => 'Uttar Pradesh', 'type' => 'city', 'pincode' => '212601', 'is_active' => true, 'is_popular' => true]
+            [
+                'name' => 'Fatehpur',
+                'district' => 'Fatehpur',
+                'state' => 'Uttar Pradesh',
+                'type' => 'city',
+                'pincode' => '212601',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
         );
-        $locKanpur = MarketplaceLocation::firstOrCreate(
+        DB::table('marketplace_locations')->updateOrInsert(
             ['slug' => 'kanpur-up'],
-            ['name' => 'Kanpur', 'district' => 'Kanpur Nagar', 'state' => 'Uttar Pradesh', 'type' => 'city', 'pincode' => '208001', 'is_active' => true, 'is_popular' => true]
+            [
+                'name' => 'Kanpur',
+                'district' => 'Kanpur Nagar',
+                'state' => 'Uttar Pradesh',
+                'type' => 'city',
+                'pincode' => '208001',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
         );
+
+        $locFatehpurId = DB::table('marketplace_locations')->where('slug', 'fatehpur-up')->value('id');
+        $locKanpurId = DB::table('marketplace_locations')->where('slug', 'kanpur-up')->value('id');
 
         // 2. Seed standard marketplace categories
         $categoriesData = [
@@ -41,33 +62,40 @@ return new class extends Migration
 
         $catMap = [];
         foreach ($categoriesData as $c) {
-            $model = MarketplaceCategory::firstOrCreate(
+            DB::table('marketplace_categories')->updateOrInsert(
                 ['slug' => $c['slug']],
-                ['name' => $c['name'], 'icon' => $c['icon'], 'sort_order' => $c['sort_order'], 'is_active' => true]
+                [
+                    'name' => $c['name'],
+                    'icon' => $c['icon'],
+                    'sort_order' => $c['sort_order'],
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
             );
-            $catMap[$c['slug']] = $model;
+            $catMap[$c['slug']] = DB::table('marketplace_categories')->where('slug', $c['slug'])->value('id');
         }
 
         // 3. Map existing businesses to category & location
-        $hardwareCat = $catMap['hardware'] ?? null;
-        if ($hardwareCat) {
+        $hardwareCatId = $catMap['hardware'] ?? null;
+        if ($hardwareCatId) {
             Business::where('name', 'like', '%hardware%')
                 ->orWhere('business_type', 'like', '%hardware%')
-                ->update(['marketplace_category_id' => $hardwareCat->id, 'location_id' => $locKanpur->id]);
+                ->update(['marketplace_category_id' => $hardwareCatId, 'location_id' => $locKanpurId]);
         }
 
-        $electronicsCat = $catMap['electronics-mobile'] ?? null;
-        if ($electronicsCat) {
+        $electronicsCatId = $catMap['electronics-mobile'] ?? null;
+        if ($electronicsCatId) {
             Business::where('name', 'like', '%technology%')
                 ->orWhere('name', 'like', '%electronics%')
-                ->update(['marketplace_category_id' => $electronicsCat->id, 'location_id' => $locFatehpur->id]);
+                ->update(['marketplace_category_id' => $electronicsCatId, 'location_id' => $locFatehpurId]);
         }
 
-        $fashionCat = $catMap['fashion-clothing'] ?? null;
-        if ($fashionCat) {
+        $fashionCatId = $catMap['fashion-clothing'] ?? null;
+        if ($fashionCatId) {
             Business::where('name', 'like', '%akki%')
                 ->whereNull('marketplace_category_id')
-                ->update(['marketplace_category_id' => $fashionCat->id, 'location_id' => $locFatehpur->id]);
+                ->update(['marketplace_category_id' => $fashionCatId, 'location_id' => $locFatehpurId]);
         }
 
         // 4. Create 1 live verified demo shop for each category
@@ -202,8 +230,8 @@ return new class extends Migration
                     'name' => $shop['name'],
                     'slug' => $shop['slug'],
                     'business_type' => $shop['type'],
-                    'marketplace_category_id' => $cat->id,
-                    'location_id' => $locFatehpur->id,
+                    'marketplace_category_id' => $cat,
+                    'location_id' => $locFatehpurId,
                     'city' => $shop['city'],
                     'locality' => $shop['locality'],
                     'address' => $shop['address'],
@@ -233,7 +261,7 @@ return new class extends Migration
                 }
             } else {
                 $existing->update([
-                    'marketplace_category_id' => $cat->id,
+                    'marketplace_category_id' => $cat,
                     'is_active' => true,
                     'is_verified' => true,
                 ]);
