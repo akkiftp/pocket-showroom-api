@@ -53,6 +53,8 @@ class Business extends Model
     protected $appends = [
         'logo_url',
         'banner_url',
+        'cover_image_url',
+        'showroom_url',
     ];
 
     public function user()
@@ -85,11 +87,30 @@ class Business extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? asset('storage/'.$this->logo_path) : null;
+        if (!$this->logo_path) return null;
+        if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://')) {
+            return $this->logo_path;
+        }
+        return asset('storage/'.$this->logo_path);
     }
 
     public function getBannerUrlAttribute(): ?string
     {
-        return $this->banner_path ? asset('storage/'.$this->banner_path) : null;
+        if (!$this->banner_path) return null;
+        if (str_starts_with($this->banner_path, 'http://') || str_starts_with($this->banner_path, 'https://')) {
+            return $this->banner_path;
+        }
+        return asset('storage/'.$this->banner_path);
+    }
+
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        return $this->banner_url;
+    }
+
+    public function getShowroomUrlAttribute(): string
+    {
+        $appUrl = rtrim(config('app.url') ?? 'https://pocket-showroom-api.onrender.com', '/');
+        return $appUrl . '/showrooms/' . $this->slug;
     }
 }

@@ -10,7 +10,17 @@ use Illuminate\Support\Str;
 class BusinessController extends Controller
 {
     private function business(Request $request): Business { return BusinessContext::require($request); }
-    public function show(Request $request){ return response()->json(['business'=>$this->business($request)]); }
+    public function show(Request $request)
+    { 
+        $business = $this->business($request);
+        return response()->json([
+            'success' => true,
+            'business' => $business,
+            'showroom_url' => $business->showroom_url,
+            'slug' => $business->slug,
+        ]); 
+    }
+
     public function store(Request $request)
     {
         abort_unless($request->user()->isShopOwner(),403,'Only a Shop Owner can create a showroom.');
@@ -25,12 +35,43 @@ class BusinessController extends Controller
             'delivery_available'=>['nullable','boolean'],'accepts_orders'=>['nullable','boolean'],
             'address'=>['nullable','string','max:1000'],'whatsapp'=>['nullable','string','max:20'],'phone'=>['nullable','string','max:20'],
             'email'=>['nullable','email','max:190'],'about'=>['nullable','string','max:3000'],
+            'logo'=>['nullable','image','max:8192'],
+            'cover_image'=>['nullable','image','max:8192'],
+            'banner'=>['nullable','image','max:8192'],
         ]);
         $base=Str::slug($data['name']) ?: 'showroom'; $slug=$base; $i=2;
         while(Business::withTrashed()->where('slug',$slug)->exists()) $slug=$base.'-'.$i++;
+        
+        $logoFile = $request->file('logo');
+        $coverFile = $request->file('cover_image') ?? $request->file('banner');
+        unset($data['logo'], $data['cover_image'], $data['banner']);
+
         $business=Business::create($data+['user_id'=>$request->user()->id,'slug'=>$slug]);
-        return response()->json(['message'=>'Showroom created.','business'=>$business],201);
+
+        if ($logoFile) {
+            $path = $logoFile->store('businesses/'.$business->id, 'public');
+            $business->update(['logo_path' => $path]);
+        }
+        if ($coverFile) {
+            $path = $coverFile->store('businesses/'.$business->id, 'public');
+            $business->update(['banner_path' => $path]);
+        }
+
+        $fresh = $business->fresh(['marketplaceCategory', 'marketplaceLocation']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Showroom created.',
+            'data' => [
+                'business' => $fresh,
+                'showroom_url' => $fresh->showroom_url,
+                'slug' => $fresh->slug,
+            ],
+            'business' => $fresh,
+            'showroom_url' => $fresh->showroom_url,
+            'slug' => $fresh->slug,
+        ], 201);
     }
+
     public function update(Request $request)
     {
         abort_unless($request->user()->canDo('business.update'),403);
@@ -45,9 +86,42 @@ class BusinessController extends Controller
             'delivery_available'=>['nullable','boolean'],'accepts_orders'=>['nullable','boolean'],
             'address'=>['nullable','string','max:1000'],'whatsapp'=>['nullable','string','max:20'],'phone'=>['nullable','string','max:20'],
             'email'=>['nullable','email','max:190'],'about'=>['nullable','string','max:3000'],'is_active'=>['sometimes','boolean'],
+            'logo'=>['nullable','image','max:8192'],
+            'cover_image'=>['nullable','image','max:8192'],
+            'banner'=>['nullable','image','max:8192'],
         ]);
         if(!$request->user()->isSuperAdmin()) unset($data['is_active']);
-        $business->update($data); return response()->json(['message'=>'Business updated.','business'=>$business->fresh()]);
+
+        $logoFile = $request->file('logo');
+        $coverFile = $request->file('cover_image') ?? $request->file('banner');
+        unset($data['logo'], $data['cover_image'], $data['banner']);
+
+        $business->update($data);
+
+        if ($logoFile) {
+            if($business->logo_path && !Str::startsWith($business->logo_path,'http')) Storage::disk('public')->delete($business->logo_path);
+            $path = $logoFile->store('businesses/'.$business->id, 'public');
+            $business->update(['logo_path' => $path]);
+        }
+        if ($coverFile) {
+            if($business->banner_path && !Str::startsWith($business->banner_path,'http')) Storage::disk('public')->delete($business->banner_path);
+            $path = $coverFile->store('businesses/'.$business->id, 'public');
+            $business->update(['banner_path' => $path]);
+        }
+
+        $fresh = $business->fresh(['marketplaceCategory', 'marketplaceLocation']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Business updated.',
+            'data' => [
+                'business' => $fresh,
+                'showroom_url' => $fresh->showroom_url,
+                'slug' => $fresh->slug,
+            ],
+            'business' => $fresh,
+            'showroom_url' => $fresh->showroom_url,
+            'slug' => $fresh->slug,
+        ]);
     }
     public function uploadLogo(Request $request){ return $this->upload($request,'logo','logo_path'); }
     public function uploadBanner(Request $request){ return $this->upload($request,'banner','banner_path'); }

@@ -32,14 +32,27 @@ class MarketplaceController extends Controller
 
     public function categories()
     {
-        return response()->json(['data'=>MarketplaceCategory::whereNull('parent_id')->where('is_active',true)->with(['children'=>fn($q)=>$q->where('is_active',true)])->withCount(['businesses'=>fn($q)=>$q->where('is_active',true)])->orderBy('sort_order')->orderBy('name')->get()]);
+        $categories = MarketplaceCategory::whereNull('parent_id')
+            ->where('is_active', true)
+            ->with(['children' => fn($q) => $q->where('is_active', true)])
+            ->withCount(['businesses' => fn($q) => $q->where('is_active', true)])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ]);
     }
 
     public function locations(Request $request)
     {
         $q=MarketplaceLocation::query()->where('is_active',true);
         if($request->filled('search')){$s=trim((string)$request->search);$q->where(fn($x)=>$x->where('name','like',"%$s%")->orWhere('district','like',"%$s%")->orWhere('state','like',"%$s%")->orWhere('pincode','like',"%$s%"));}
-        return response()->json(['data'=>$q->withCount(['businesses'=>fn($b)=>$b->where('is_active',true)])->orderBy('name')->limit(100)->get()]);
+        return response()->json([
+            'success' => true,
+            'data'=>$q->withCount(['businesses'=>fn($b)=>$b->where('is_active',true)])->orderBy('name')->limit(100)->get()
+        ]);
     }
 
     public function shops(Request $request)
@@ -61,15 +74,30 @@ class MarketplaceController extends Controller
         return response()->json($q->paginate(min(max($request->integer('per_page',20),1),60)));
     }
 
-    public function shop(Request $request,string $slug)
+    public function shop(Request $request, string $slug)
     {
-        $business=Business::where('slug',$slug)->where('is_active',true)->with(['marketplaceCategory','marketplaceLocation'])->withCount(['products'=>fn($q)=>$q->where('is_active',true)->where('in_stock',true)])->firstOrFail();
+        $business = Business::where('is_active', true)
+            ->where(function($q) use ($slug) {
+                $q->where('slug', $slug);
+                if (is_numeric($slug)) {
+                    $q->orWhere('id', (int)$slug);
+                }
+            })
+            ->with(['marketplaceCategory', 'marketplaceLocation'])
+            ->withCount(['products' => fn($q) => $q->where('is_active', true)->where('in_stock', true)])
+            ->firstOrFail();
+
         $business->increment('marketplace_views');
+        $fresh = $business->fresh(['marketplaceCategory', 'marketplaceLocation']);
+        $cleanPhone = preg_replace('/[^0-9]/', '', $fresh->whatsapp ?? $fresh->phone ?? '');
+
         return response()->json([
-            'success'=>true,
-            'business'=>$business->fresh(['marketplaceCategory','marketplaceLocation']),
-            'categories'=>$business->categories()->where('is_active',true)->get(),
-            'products'=>$business->products()->where('is_active',true)->where('in_stock',true)->with('images')->orderByDesc('is_featured')->latest('id')->limit(200)->get(),
+            'success' => true,
+            'business' => $fresh,
+            'showroom_url' => $fresh->showroom_url,
+            'whatsapp_url' => $cleanPhone ? 'https://wa.me/91'.$cleanPhone : null,
+            'categories' => $fresh->categories()->where('is_active', true)->get(),
+            'products' => $fresh->products()->where('is_active', true)->where('in_stock', true)->with('images')->orderByDesc('is_featured')->latest('id')->limit(200)->get(),
         ]);
     }
 
