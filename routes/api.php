@@ -17,10 +17,19 @@ use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\TrackingController;
 use App\Http\Controllers\Api\MarketplaceAdminController;
+use App\Http\Controllers\Api\ShareController;
+use App\Http\Controllers\Api\SuperAdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn()=>response()->json(['ok'=>true,'service'=>'Showmora API','auth_mode'=>config('pocket_showroom.auth_driver'),'free_mode'=>(bool)config('pocket_showroom.free_mode'),'timestamp'=>now()->toIso8601String()]));
 Route::prefix('auth')->group(fn()=>Route::post('/firebase-login',[AuthController::class,'firebaseLogin'])->middleware('throttle:10,1'));
+
+// Public tracking and share resolution
+Route::post('/tracking/event', [TrackingController::class, 'publicEvent'])->middleware('throttle:120,1');
+Route::post('/tracking/link-visitor', [TrackingController::class, 'linkVisitor']);
+Route::post('/shares/create', [ShareController::class, 'create']);
+Route::get('/shares/{code}', [ShareController::class, 'resolve']);
+
 Route::prefix('marketplace')->group(function(){
     Route::get('/home',[MarketplaceController::class,'home']);
     Route::get('/categories',[MarketplaceController::class,'categories']);
@@ -44,7 +53,22 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/auth/logout',[AuthController::class,'logout']);
     Route::get('/subscription/status',[SubscriptionController::class,'status']);
 
-    // Platform Super Admin: no business ownership; controls all shops/owners.
+    // Super Admin Control Panel API
+    Route::prefix('super-admin')->middleware('admin')->group(function(){
+        Route::get('/dashboard', [SuperAdminDashboardController::class, 'dashboard']);
+        Route::get('/owners', [SuperAdminDashboardController::class, 'owners']);
+        Route::get('/owners/{id}', [SuperAdminDashboardController::class, 'owner']);
+        Route::get('/shops', [SuperAdminDashboardController::class, 'shops']);
+        Route::get('/shops/{id}', [SuperAdminDashboardController::class, 'shop']);
+        Route::post('/shops/{id}/verify', [SuperAdminDashboardController::class, 'toggleVerify']);
+        Route::post('/shops/{id}/feature', [SuperAdminDashboardController::class, 'toggleFeature']);
+        Route::post('/shops/{id}/toggle-active', [SuperAdminDashboardController::class, 'toggleActive']);
+        Route::get('/products', [SuperAdminDashboardController::class, 'products']);
+        Route::get('/customers', [SuperAdminDashboardController::class, 'customers']);
+        Route::get('/audit-logs', [SuperAdminDashboardController::class, 'auditLogs']);
+    });
+
+    // Legacy Platform Admin routes
     Route::prefix('admin')->middleware('admin')->group(function(){
         Route::get('/overview',[AdminController::class,'overview']);
         Route::get('/marketplace/categories',[MarketplaceAdminController::class,'categories']);
@@ -71,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function(){
 
     Route::get('/dashboard',[DashboardController::class,'index'])->middleware('permission:dashboard.view');
     Route::get('/analytics',[AnalyticsController::class,'overview'])->middleware('permission:analytics.view');
+    Route::get('/owner/analytics',[AnalyticsController::class,'overview'])->middleware('permission:analytics.view');
     Route::get('/analytics/customers',[AnalyticsController::class,'customers'])->middleware('permission:analytics.view');
     Route::get('/analytics/products',[AnalyticsController::class,'products'])->middleware('permission:analytics.view');
     Route::post('/activity',[TrackingController::class,'ownerEvent']);
