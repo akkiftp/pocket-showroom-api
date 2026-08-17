@@ -57,21 +57,65 @@ class MarketplaceController extends Controller
 
     public function shops(Request $request)
     {
-        $q=Business::query()->where('is_active',true)->with(['marketplaceCategory:id,name,slug,icon','marketplaceLocation:id,name,type,state,district,pincode'])->withCount(['products'=>fn($p)=>$p->where('is_active',true)->where('in_stock',true)]);
-        if($request->integer('category_id'))$q->where('marketplace_category_id',$request->integer('category_id'));
-        if($request->integer('location_id'))$q->where('location_id',$request->integer('location_id'));
-        if($request->filled('city'))$q->where('city','like','%'.trim((string)$request->city).'%');
-        if($request->filled('pincode'))$q->where('pincode',$request->string('pincode')->toString());
-        if($request->boolean('featured'))$q->where('is_featured',true);
-        if($request->filled('search')){$s=trim((string)$request->search);$q->where(fn($x)=>$x->where('name','like',"%$s%")->orWhere('about','like',"%$s%")->orWhereHas('products',fn($p)=>$p->where('name','like',"%$s%")->where('is_active',true)));}
-        $lat=$request->input('lat');$lng=$request->input('lng');
-        if(is_numeric($lat)&&is_numeric($lng)){
-            $lat=(float)$lat;$lng=(float)$lng;
-            $q->select('businesses.*')->selectRaw('(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance_km',[$lat,$lng,$lat])->whereNotNull('latitude')->whereNotNull('longitude')->orderBy('distance_km');
+        $q = Business::query()->where('is_active', true)
+            ->with(['marketplaceCategory:id,name,slug,icon', 'marketplaceLocation:id,name,type,state,district,pincode'])
+            ->withCount(['products' => fn($p) => $p->where('is_active', true)->where('in_stock', true)]);
+
+        if ($request->filled('category_id') || $request->filled('category') || $request->filled('category_slug')) {
+            $catId = $request->integer('category_id') ?: null;
+            $catStr = trim((string) ($request->query('category') ?? $request->query('category_slug') ?? ''));
+
+            $matchedCat = null;
+            if ($catId) {
+                $matchedCat = MarketplaceCategory::find($catId);
+            }
+            if (!$matchedCat && $catStr !== '') {
+                $matchedCat = MarketplaceCategory::where('slug', $catStr)
+                    ->orWhere('name', 'like', "%{$catStr}%")
+                    ->first();
+            }
+
+            $searchName = $matchedCat ? $matchedCat->name : $catStr;
+            $searchId = $matchedCat ? $matchedCat->id : $catId;
+
+            // Extract core words for flexible matching (e.g. "Hardware", "Grocery", "Medical")
+            $firstWord = explode(' ', trim(str_replace(['/', '-', '&'], ' ', $searchName)))[0] ?? $searchName;
+
+            $q->where(function($sub) use ($searchId, $searchName, $firstWord) {
+                if ($searchId) {
+                    $sub->where('marketplace_category_id', $searchId);
+                }
+                if ($searchName !== '') {
+                    $sub->orWhere('business_type', 'like', "%{$searchName}%")
+                        ->orWhere('name', 'like', "%{$searchName}%");
+                }
+                if ($firstWord !== '' && strlen($firstWord) >= 3) {
+                    $sub->orWhere('business_type', 'like', "%{$firstWord}%")
+                        ->orWhere('name', 'like', "%{$firstWord}%");
+                }
+            });
+        }
+
+        if ($request->integer('location_id')) $q->where('location_id', $request->integer('location_id'));
+        if ($request->filled('city')) $q->where('city', 'like', '%' . trim((string)$request->city) . '%');
+        if ($request->filled('pincode')) $q->where('pincode', $request->string('pincode')->toString());
+        if ($request->boolean('featured')) $q->where('is_featured', true);
+        if ($request->filled('search')) {
+            $s = trim((string)$request->search);
+            $q->where(fn($x) => $x->where('name', 'like', "%$s%")->orWhere('about', 'like', "%$s%")->orWhereHas('products', fn($p) => $p->where('name', 'like', "%$s%")->where('is_active', true)));
+        }
+
+        $lat = $request->input('lat');
+        $lng = $request->input('lng');
+        if (is_numeric($lat) && is_numeric($lng)) {
+            $lat = (float)$lat;
+            $lng = (float)$lng;
+            $q->select('businesses.*')->selectRaw('(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))) AS distance_km', [$lat, $lng, $lat])->whereNotNull('latitude')->whereNotNull('longitude')->orderBy('distance_km');
         } else {
             $q->orderByDesc('is_featured')->orderByDesc('is_verified')->orderByDesc('marketplace_views')->latest('id');
         }
-        return response()->json($q->paginate(min(max($request->integer('per_page',20),1),60)));
+
+        return response()->json($q->paginate(min(max($request->integer('per_page', 20), 1), 60)));
     }
 
     public function shop(Request $request, string $slug)
