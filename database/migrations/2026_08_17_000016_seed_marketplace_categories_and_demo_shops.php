@@ -17,12 +17,12 @@ return new class extends Migration
     {
         // 1. Seed standard locations
         $locFatehpur = MarketplaceLocation::firstOrCreate(
-            ['name' => 'Fatehpur', 'district' => 'Fatehpur', 'state' => 'Uttar Pradesh'],
-            ['type' => 'city', 'pincode' => '212601', 'is_active' => true, 'is_popular' => true]
+            ['slug' => 'fatehpur-up'],
+            ['name' => 'Fatehpur', 'district' => 'Fatehpur', 'state' => 'Uttar Pradesh', 'type' => 'city', 'pincode' => '212601', 'is_active' => true, 'is_popular' => true]
         );
         $locKanpur = MarketplaceLocation::firstOrCreate(
-            ['name' => 'Kanpur', 'district' => 'Kanpur Nagar', 'state' => 'Uttar Pradesh'],
-            ['type' => 'city', 'pincode' => '208001', 'is_active' => true, 'is_popular' => true]
+            ['slug' => 'kanpur-up'],
+            ['name' => 'Kanpur', 'district' => 'Kanpur Nagar', 'state' => 'Uttar Pradesh', 'type' => 'city', 'pincode' => '208001', 'is_active' => true, 'is_popular' => true]
         );
 
         // 2. Seed standard marketplace categories
