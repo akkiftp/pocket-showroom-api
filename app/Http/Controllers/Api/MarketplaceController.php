@@ -87,7 +87,10 @@ class MarketplaceController extends Controller
             ->withCount(['products' => fn($q) => $q->where('is_active', true)->where('in_stock', true)])
             ->firstOrFail();
 
-        $business->increment('marketplace_views');
+        try {
+            $business->increment('marketplace_views');
+        } catch (\Throwable $e) {}
+
         $fresh = $business->fresh(['marketplaceCategory', 'marketplaceLocation']);
         $cleanPhone = preg_replace('/[^0-9]/', '', $fresh->whatsapp ?? $fresh->phone ?? '');
 
@@ -97,7 +100,7 @@ class MarketplaceController extends Controller
             'showroom_url' => $fresh->showroom_url,
             'whatsapp_url' => $cleanPhone ? 'https://wa.me/91'.$cleanPhone : null,
             'categories' => $fresh->categories()->where('is_active', true)->get(),
-            'products' => $fresh->products()->where('is_active', true)->where('in_stock', true)->with('images')->orderByDesc('is_featured')->latest('id')->limit(200)->get(),
+            'products' => $fresh->products()->where('is_active', true)->where('in_stock', true)->with(['category:id,name', 'images'])->orderByDesc('featured')->orderBy('sort_order')->latest('id')->limit(200)->get(),
         ]);
     }
 
