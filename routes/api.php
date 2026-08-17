@@ -22,6 +22,22 @@ use App\Http\Controllers\Api\SuperAdminDashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn()=>response()->json(['ok'=>true,'service'=>'Showmora API','auth_mode'=>config('pocket_showroom.auth_driver'),'free_mode'=>(bool)config('pocket_showroom.free_mode'),'timestamp'=>now()->toIso8601String()]));
+Route::get('/system/migrate', function() {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrations executed.',
+            'output' => $output,
+            'categories_count' => \App\Models\MarketplaceCategory::count(),
+            'shops_count' => \App\Models\Business::count(),
+            'products_count' => \App\Models\Product::count(),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
 Route::prefix('auth')->group(fn()=>Route::post('/firebase-login',[AuthController::class,'firebaseLogin'])->middleware('throttle:10,1'));
 
 // Public tracking and share resolution
