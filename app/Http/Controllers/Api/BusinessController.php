@@ -23,8 +23,12 @@ class BusinessController extends Controller
 
     public function store(Request $request)
     {
-        abort_unless($request->user()->isShopOwner(),403,'Only a Shop Owner can create a showroom.');
-        abort_if(Business::where('user_id',$request->user()->id)->exists(),422,'This owner already has a showroom.');
+        abort_unless($request->user()->isShopOwner() || $request->user()->isSuperAdmin(), 403, 'Only a Shop Owner can create a showroom.');
+        
+        $existing = Business::where('user_id', $request->user()->id)->first();
+        if ($existing) {
+            return $this->update($request);
+        }
         $data=$request->validate([
             'name'=>['required','string','max:150'],'business_type'=>['nullable','string','max:100'],
             'marketplace_category_id'=>['nullable','integer','exists:marketplace_categories,id'],

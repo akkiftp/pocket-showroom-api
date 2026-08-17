@@ -99,9 +99,13 @@
             <!-- Left: Logo & Verified Title -->
             <div class="flex items-center gap-2.5 min-w-0">
                 <div class="relative flex-shrink-0">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-900 to-brand-700 text-white flex items-center justify-center font-serif font-black text-lg shadow-md shadow-brand-900/20 ring-1.5 ring-gold-400/40">
-                        {{ strtoupper(substr($business->name ?? 'S', 0, 1)) }}
-                    </div>
+                    @if(!empty($business->logo_url))
+                        <img src="{{ $business->logo_url }}" alt="{{ $business->name }}" class="w-11 h-11 rounded-xl object-cover ring-1.5 ring-gold-400/40 shadow-md">
+                    @else
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-900 to-brand-700 text-white flex items-center justify-center font-serif font-black text-lg shadow-md shadow-brand-900/20 ring-1.5 ring-gold-400/40">
+                            {{ strtoupper(substr($business->name ?? 'S', 0, 1)) }}
+                        </div>
+                    @endif
                     <span class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center">
                         <span class="w-1 h-1 rounded-full bg-white animate-ping"></span>
                     </span>
@@ -120,7 +124,7 @@
                             {{ $business->business_type ?? 'BOUTIQUE' }}
                         </span>
                         <span>•</span>
-                        <span class="truncate">{{ $business->city ?? 'Verified Showroom' }}</span>
+                        <span class="truncate">{{ $business->locality ?? $business->city ?? 'Verified Showroom' }}</span>
                     </div>
                 </div>
             </div>
@@ -150,7 +154,7 @@
 
     <!-- Mobile-First Luxury Hero Card -->
     <div class="px-3.5 sm:px-6 lg:px-8 pt-3 sm:pt-6">
-        <div class="max-w-7xl mx-auto rounded-3xl mobile-hero-bg text-white p-5 sm:p-10 shadow-xl relative overflow-hidden">
+        <div class="max-w-7xl mx-auto rounded-3xl mobile-hero-bg text-white p-5 sm:p-10 shadow-xl relative overflow-hidden @if(!empty($business->banner_url)) bg-cover bg-center @endif" @if(!empty($business->banner_url)) style="background-image: linear-gradient(150deg, rgba(28, 4, 14, 0.85) 0%, rgba(59, 9, 30, 0.85) 50%, rgba(107, 15, 55, 0.85) 100%), url('{{ $business->banner_url }}');" @endif>
             <!-- Background Glows -->
             <div class="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-gold-400/15 blur-2xl pointer-events-none"></div>
             
@@ -216,14 +220,7 @@
         <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
             @forelse($products ?? [] as $product)
             @php
-                $img = !empty($product->images) && count($product->images) > 0 ? $product->images[0]->path : null;
-                if ($img) {
-                    if (str_contains($img, 'localhost')) {
-                        $img = preg_replace('#https?://localhost(:[0-9]+)?#', 'https://pocket-showroom-api.onrender.com', $img);
-                    } elseif (!str_starts_with($img, 'http')) {
-                        $img = asset('storage/'.$img);
-                    }
-                }
+                $img = !empty($product->images) && count($product->images) > 0 ? $product->images[0]->url : null;
                 $hasOffer = !empty($product->offer_price) && $product->offer_price < $product->price;
                 $selling = $hasOffer ? $product->offer_price : $product->price;
                 $discount = $hasOffer ? round((($product->price - $product->offer_price) / $product->price) * 100) : 0;

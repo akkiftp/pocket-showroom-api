@@ -26,6 +26,11 @@ class ProductImage extends Model
 
     public function getUrlAttribute(): string
     {
-        return asset('storage/'.$this->path);
+        if (str_starts_with($this->path, 'http://') || str_starts_with($this->path, 'https://')) {
+            return str_replace('http://', 'https://', $this->path);
+        }
+        $appUrl = rtrim(config('app.url') ?? 'https://pocket-showroom-api.onrender.com', '/');
+        $appUrl = str_replace('http://', 'https://', $appUrl);
+        return $appUrl . '/storage/' . ltrim($this->path, '/');
     }
 }

@@ -89,18 +89,22 @@ class Business extends Model
     {
         if (!$this->logo_path) return null;
         if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://')) {
-            return $this->logo_path;
+            return str_replace('http://', 'https://', $this->logo_path);
         }
-        return asset('storage/'.$this->logo_path);
+        $appUrl = rtrim(config('app.url') ?? 'https://pocket-showroom-api.onrender.com', '/');
+        $appUrl = str_replace('http://', 'https://', $appUrl);
+        return $appUrl . '/storage/' . ltrim($this->logo_path, '/');
     }
 
     public function getBannerUrlAttribute(): ?string
     {
         if (!$this->banner_path) return null;
         if (str_starts_with($this->banner_path, 'http://') || str_starts_with($this->banner_path, 'https://')) {
-            return $this->banner_path;
+            return str_replace('http://', 'https://', $this->banner_path);
         }
-        return asset('storage/'.$this->banner_path);
+        $appUrl = rtrim(config('app.url') ?? 'https://pocket-showroom-api.onrender.com', '/');
+        $appUrl = str_replace('http://', 'https://', $appUrl);
+        return $appUrl . '/storage/' . ltrim($this->banner_path, '/');
     }
 
     public function getCoverImageUrlAttribute(): ?string
@@ -111,6 +115,7 @@ class Business extends Model
     public function getShowroomUrlAttribute(): string
     {
         $appUrl = rtrim(config('app.url') ?? 'https://pocket-showroom-api.onrender.com', '/');
+        $appUrl = str_replace('http://', 'https://', $appUrl);
         return $appUrl . '/showrooms/' . $this->slug;
     }
 }

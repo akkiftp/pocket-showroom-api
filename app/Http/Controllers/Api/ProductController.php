@@ -28,7 +28,7 @@ class ProductController extends Controller
     private function validatePayload(Request $request, ?Product $product = null): array
     {
         return $request->validate([
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer'],
             'name' => [$product ? 'sometimes' : 'required', 'string', 'max:180'],
             'sku' => ['nullable', 'string', 'max:100'],
             'price' => [$product ? 'sometimes' : 'required', 'numeric', 'min:0'],
@@ -88,7 +88,7 @@ class ProductController extends Controller
                 ->exists();
 
             if (!$validCategory) {
-                return response()->json(['message' => 'Invalid category for this business.'], 422);
+                $data['category_id'] = null;
             }
         }
 
