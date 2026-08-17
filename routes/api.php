@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\PublicShowroomController;
 use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\TrackingController;
-use App\Http\Controllers\Api\MarketplaceController;
 use App\Http\Controllers\Api\MarketplaceAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,10 +29,6 @@ Route::prefix('marketplace')->group(function(){
     Route::get('/shops/{slug}',[MarketplaceController::class,'shop']);
     Route::get('/search',[MarketplaceController::class,'search']);
 });
-
-
-Route::get('/marketplace/home', [MarketplaceController::class, 'home']);
-Route::get('/marketplace/shops', [MarketplaceController::class, 'shops']);
 
 Route::prefix('public/showrooms/{slug}')->group(function(){
     Route::get('/',[PublicShowroomController::class,'show']);
