@@ -1,22 +1,39 @@
 <?php
 
-// Force SQLite as default unless a real remote DATABASE_URL is configured
-$dbConn = 'sqlite';
-
-if (env('DATABASE_URL')) {
-    $dbConn = 'pgsql';
-}
+$dbConn = env('DB_CONNECTION', 'mysql');
 
 return [
+
     'default' => $dbConn,
 
     'connections' => [
+
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
             'database' => env('DB_DATABASE', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DATABASE_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'pocket_showroom'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ]) : [],
         ],
 
         'pgsql' => [
