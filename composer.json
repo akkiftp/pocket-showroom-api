@@ -6,7 +6,7 @@
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {
-        "php": "^8.5",
+        "php": "^8.3",
         "cloudinary/cloudinary_php": "^3.1",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
@@ -81,6 +81,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.3.22"
         }
     },
     "minimum-stability": "stable",
