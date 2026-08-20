@@ -64,6 +64,7 @@ class Business extends Model
 
     public function marketplaceCategory() { return $this->belongsTo(MarketplaceCategory::class, 'marketplace_category_id'); }
     public function marketplaceLocation() { return $this->belongsTo(MarketplaceLocation::class, 'location_id'); }
+    public function location() { return $this->belongsTo(MarketplaceLocation::class, 'location_id'); }
 
     public function categories()
     {
