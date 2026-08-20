@@ -224,7 +224,7 @@
                             ● LIVE REELS
                         </span>
                     </div>
-                    <p class="text-[11px] text-gray-500 font-medium">Tap to watch real product demos & video shorts</p>
+                    <p class="text-[11px] text-gray-500 font-medium">✨ Showroom Owner Promotional Reels <p class="text-[11px] text-gray-500 font-medium">Tap to watch real product demos & video shorts</p> Live Product Demos • Tap to play full screen <p class="text-[11px] text-gray-500 font-medium">Tap to watch real product demos & video shorts</p> 1-click buy on WhatsApp</p>
                 </div>
             </div>
             <span class="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-100 hidden sm:inline-block">
