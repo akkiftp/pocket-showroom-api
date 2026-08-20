@@ -116,6 +116,10 @@
                     <span>📦 Products Catalog</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $tab === 'products' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400' }}">{{ $totalProducts }}</span>
                 </a>
+                <a href="/admin?tab=reels&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'reels' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                    <span>🎬 Video Reels & Promos</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $tab === 'reels' ? 'bg-white/20 text-white' : 'bg-rose-500/20 text-rose-300' }}">{{ $totalReels }}</span>
+                </a>
                 <a href="/admin?tab=customers&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'customers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>🎯 Customer Leads</span>
                 </a>
@@ -964,6 +968,130 @@
         @endif
 
         <!-- =================================================================== -->
+        <!-- TAB: VIDEO REELS & PROMOTION MODERATION -->
+        <!-- =================================================================== -->
+        @if($tab === 'reels')
+            <div class="glass-panel rounded-3xl p-6 space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                            <h2 class="text-xl font-black text-white">Live Promotional Video Reels Hub</h2>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                {{ $totalReels }} Submitted Reels
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Watch and moderate product reels, Shorts, and video demos submitted by shop owners</p>
+                    </div>
+
+                    <!-- Search Form -->
+                    <form method="GET" action="/admin" class="flex items-center gap-2">
+                        <input type="hidden" name="tab" value="reels">
+                        <input type="hidden" name="days" value="{{ $days }}">
+                        <input type="text" name="search" value="{{ $search }}" placeholder="Search product, shop, SKU..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-56 sm:w-64">
+                        <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">Search</button>
+                        @if($search)
+                            <a href="/admin?tab=reels&days={{ $days }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
+                        @endif
+                    </form>
+                </div>
+
+                <!-- Video Reels Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    @forelse($videoReels as $vProd)
+                        @php
+                            $vImg = $vProd->images->first() ? $vProd->images->first()->image_url : null;
+                            $embed = $vProd->video_embed_url ?: $vProd->video_url;
+                        @endphp
+                        <div class="bg-slate-900/80 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between hover:border-indigo-500/40 transition group">
+                            
+                            <!-- Video Thumbnail & Play Box -->
+                            <div class="relative aspect-[9/14] bg-black overflow-hidden flex items-center justify-center">
+                                @if($vImg)
+                                    <img src="{{ $vImg }}" alt="{{ $vProd->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-80">
+                                @else
+                                    <div class="w-full h-full bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center">
+                                        <span class="text-4xl">🎬</span>
+                                    </div>
+                                @endif
+
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
+
+                                <!-- Top Badges -->
+                                <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
+                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-600 text-white shadow">
+                                        🎬 REEL
+                                    </span>
+                                    @if($vProd->is_promoted)
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-amber-500 text-white shadow">
+                                            🔥 SPOTLIGHT
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <!-- Play Button (Trigger Modal) -->
+                                <button type="button" onclick="playAdminVideo('{{ addslashes($vProd->name) }}', '{{ addslashes($embed) }}', '{{ $vProd->business ? addslashes($vProd->business->name) : 'Showroom' }}')" class="absolute inset-0 m-auto w-12 h-12 rounded-full bg-rose-600/90 hover:bg-rose-500 text-white flex items-center justify-center text-lg shadow-xl shadow-rose-600/40 transition transform hover:scale-110">
+                                    ▶
+                                </button>
+                            </div>
+
+                            <!-- Product & Shop Details -->
+                            <div class="p-4 space-y-3">
+                                <div>
+                                    <h4 class="font-bold text-white text-sm line-clamp-1">{{ $vProd->name }}</h4>
+                                    <div class="text-[11px] text-indigo-400 font-semibold flex items-center justify-between mt-0.5">
+                                        <span>{{ $vProd->business ? $vProd->business->name : 'Unassigned Shop' }}</span>
+                                        <span class="font-bold text-white">₹{{ number_format($vProd->selling_price, 2) }}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-400 font-mono mt-1 truncate">
+                                        Owner: {{ $vProd->business && $vProd->business->user ? $vProd->business->user->phone : '—' }}
+                                    </div>
+                                </div>
+
+                                <!-- Actions Toolbar -->
+                                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-1.5 flex-wrap">
+                                    
+                                    <!-- Toggle Spotlight Form -->
+                                    <form method="POST" action="/admin/products/{{ $vProd->id }}/toggle-promoted">
+                                        @csrf
+                                        <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $vProd->is_promoted ? 'bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600/40' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white' }}">
+                                            {{ $vProd->is_promoted ? '★ Boosted' : '☆ Boost Reel' }}
+                                        </button>
+                                    </form>
+
+                                    <!-- Source Link -->
+                                    <a href="{{ $vProd->video_url }}" target="_blank" class="px-2 py-1 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                                        Source ↗
+                                    </a>
+
+                                    <!-- Delete Form -->
+                                    <form method="POST" action="/admin/products/{{ $vProd->id }}/delete" onsubmit="return confirm('Delete this video product?');">
+                                        @csrf
+                                        <button type="submit" class="px-2 py-1 rounded-lg text-xs font-bold bg-rose-600/20 text-rose-300 border border-rose-500/30 hover:bg-rose-600/40 transition">
+                                            Delete
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    @empty
+                        <div class="col-span-full p-12 text-center text-slate-400 text-xs">
+                            No video reels submitted yet.
+                        </div>
+                    @endforelse
+                </div>
+
+                @if($videoReels->hasPages())
+                    <div class="pt-2">
+                        {{ $videoReels->links() }}
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <!-- =================================================================== -->
         <!-- TAB 5: CUSTOMER LEADS DIRECTORY -->
         <!-- =================================================================== -->
         @if($tab === 'customers')
@@ -1580,6 +1708,49 @@
             </div>
         </div>
     </footer>
+
+
+    <!-- Admin Video Player Modal -->
+    <div id="adminVideoModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div onclick="closeAdminVideo()" class="absolute inset-0 z-0"></div>
+        <div class="relative z-10 w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 id="adminVideoTitle" class="text-sm font-bold text-white">Product Reel</h3>
+                    <p id="adminVideoShop" class="text-xs text-indigo-400 font-semibold">Showroom</p>
+                </div>
+                <button onclick="closeAdminVideo()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center font-bold text-sm">
+                    ✕
+                </button>
+            </div>
+            <div id="adminVideoFrameContainer" class="w-full aspect-[9/14] bg-black flex items-center justify-center">
+                <!-- Video / Iframe Injected -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function playAdminVideo(title, url, shop) {
+            document.getElementById('adminVideoTitle').innerText = title;
+            document.getElementById('adminVideoShop').innerText = shop;
+            const container = document.getElementById('adminVideoFrameContainer');
+            
+            if (url.includes('youtube.com/embed/')) {
+                container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else if (url.includes('instagram.com/reel/')) {
+                container.innerHTML = `<iframe src="${url}" class="w-full h-full border-0" allowtransparency="true" frameborder="0" scrolling="no"></iframe>`;
+            } else {
+                container.innerHTML = `<video src="${url}" class="w-full h-full object-contain" autoplay controls playsinline></video>`;
+            }
+            
+            document.getElementById('adminVideoModal').classList.remove('hidden');
+        }
+
+        function closeAdminVideo() {
+            document.getElementById('adminVideoFrameContainer').innerHTML = '';
+            document.getElementById('adminVideoModal').classList.add('hidden');
+        }
+    </script>
 
 </body>
 </html>

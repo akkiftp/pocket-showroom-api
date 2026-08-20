@@ -41,8 +41,9 @@ Route::prefix('admin')->group(function () {
         Route::post('/users/{id}/block', [WebAdminController::class, 'blockUser'])->name('admin.users.block');
         Route::post('/users/{id}/extend-trial', [WebAdminController::class, 'extendTrial'])->name('admin.users.extend-trial');
         
-        // Products Catalog
+        // Products & Video Reels Catalog
         Route::post('/products/{id}/toggle-stock', [WebAdminController::class, 'toggleStock'])->name('admin.products.toggle-stock');
+        Route::post('/products/{id}/toggle-promoted', [WebAdminController::class, 'togglePromoted'])->name('admin.products.toggle-promoted');
         Route::post('/products/{id}/delete', [WebAdminController::class, 'deleteProduct'])->name('admin.products.delete');
         
         // Orders & Inquiries

@@ -112,6 +112,7 @@ class WebAdminController extends Controller
         $featuredShops = Business::where('is_featured', true)->count();
         $totalProducts = Product::count();
         $inStockProducts = Product::where('in_stock', true)->count();
+        $totalReels = Product::whereNotNull('video_url')->where('video_url', '!=', '')->count();
 
         // 2. Range-based Engagement & Funnel Metrics
         $eventsQuery = ActivityEvent::where('created_at', '>=', $since);
@@ -188,6 +189,19 @@ class WebAdminController extends Controller
         }
         $products = $productsQuery->latest('id')->paginate(15, ['*'], 'products_page')->withQueryString();
 
+        // Tab: Video Reels Directory
+        $reelsQuery = Product::with(['business.user', 'category', 'images'])
+            ->whereNotNull('video_url')
+            ->where('video_url', '!=', '');
+        if ($search !== '') {
+            $reelsQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%")
+                  ->orWhereHas('business', fn($bq) => $bq->where('name', 'like', "%{$search}%"));
+            });
+        }
+        $videoReels = $reelsQuery->latest('id')->paginate(12, ['*'], 'reels_page')->withQueryString();
+
         // Tab: Customer Leads (CustomerContacts + Inquiries + Orders)
         $contactsQuery = CustomerContact::with('business');
         if ($search !== '') {
@@ -250,6 +264,8 @@ class WebAdminController extends Controller
             'featuredShops',
             'totalProducts',
             'inStockProducts',
+            'totalReels',
+            'videoReels',
             'totalViews',
             'productViews',
             'whatsappClicks',
@@ -394,6 +410,21 @@ class WebAdminController extends Controller
             return response()->json(['success' => true, 'in_stock' => $product->in_stock]);
         }
         return back()->with('success', "Product '{$product->name}' stock marked as " . ($product->in_stock ? 'In Stock' : 'Out of Stock') . ".");
+    }
+
+    public function togglePromoted(Request $request, int $id)
+    {
+        $product = Product::findOrFail($id);
+        $old = ['is_promoted' => (bool)$product->is_promoted];
+        $product->is_promoted = !$product->is_promoted;
+        $product->save();
+
+        AuditLog::log($product->is_promoted ? 'promote_reel' : 'unpromote_reel', 'Product', $product->id, $old, ['is_promoted' => $product->is_promoted]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'is_promoted' => $product->is_promoted]);
+        }
+        return back()->with('success', "Product '{$product->name}' reel promotion status updated to " . ($product->is_promoted ? '🔥 Spotlight Promoted' : 'Standard') . ".");
     }
 
     public function deleteProduct(Request $request, int $id)
