@@ -35,6 +35,7 @@ class Business extends Model
         'about',
         'logo_path',
         'banner_path',
+        'promo_video_url',
         'theme_primary',
         'theme_secondary',
         'is_active',

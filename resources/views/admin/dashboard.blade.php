@@ -876,7 +876,14 @@
                                                 </div>
                                             @endif
                                             <div>
-                                                <div class="font-bold text-white">{{ $product->name }}</div>
+                                                <div class="font-bold text-white flex items-center gap-1.5">
+                                                    <span>{{ $product->name }}</span>
+                                                    @if($product->video_url)
+                                                        <a href="{{ $product->video_url }}" target="_blank" class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/40 transition" title="Watch Product Reel">
+                                                            🎬 Reel ↗
+                                                        </a>
+                                                    @endif
+                                                </div>
                                                 <div class="text-[11px] text-slate-400">SKU: {{ $product->sku ?: 'N/A' }}</div>
                                             </div>
                                         </div>

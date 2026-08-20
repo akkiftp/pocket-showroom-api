@@ -203,6 +203,83 @@
         </div>
     </div>
 
+    @php
+        $reels = collect($products ?? [])->filter(fn($p) => !empty($p->video_url))->values();
+    @endphp
+
+    @if($reels->count() > 0)
+    <!-- Live Video Reels Section -->
+    <section class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 mt-5 sm:mt-7">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 via-purple-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M4 6.47v11.06c0 1.55 1.68 2.52 3.02 1.74l9.59-5.53c1.31-.76 1.31-2.69 0-3.45l-9.59-5.53C5.68 3.95 4 4.92 4 6.47z"/></svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-serif font-black text-base sm:text-xl text-gray-950 tracking-tight">
+                            Live Product Reels & Video Demos
+                        </h3>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500 text-white animate-pulse">
+                            ● LIVE REELS
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 font-medium">Tap to watch real product demos & video shorts</p>
+                </div>
+            </div>
+            <span class="text-xs font-black text-rose-600 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-100 hidden sm:inline-block">
+                {{ $reels->count() }} Live Clips
+            </span>
+        </div>
+
+        <!-- Horizontal Reels Cards Scroll -->
+        <div class="flex gap-3 sm:gap-4 overflow-x-auto pb-2 scrollbar-none snap-x">
+            @foreach($reels as $idx => $rProd)
+            @php
+                $rImg = !empty($rProd->images) && count($rProd->images) > 0 ? $rProd->images[0]->url : null;
+                $rPrice = $rProd->selling_price;
+            @endphp
+            <div onclick="openReelModal({{ $idx }})" class="snap-start flex-shrink-0 w-32 sm:w-44 aspect-[9/16] rounded-2xl sm:rounded-3xl relative overflow-hidden cursor-pointer group shadow-lg shadow-purple-950/10 border-2 border-rose-400/40 hover:border-rose-500 transition-all transform hover:-translate-y-1 bg-slate-900">
+                @if($rImg)
+                    <img src="{{ $rImg }}" alt="{{ $rProd->name }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                @else
+                    <div class="w-full h-full bg-gradient-to-br from-purple-900 via-pink-900 to-rose-900 flex items-center justify-center">
+                        <span class="text-3xl">🎬</span>
+                    </div>
+                @endif
+
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+
+                <div class="absolute top-2 left-2 right-2 flex items-center justify-between pointer-events-none">
+                    <span class="px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-rose-600 text-white shadow">
+                        🎬 REEL
+                    </span>
+                    @if($rProd->is_promoted)
+                        <span class="px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-amber-500 text-white shadow">
+                            🔥 HOT
+                        </span>
+                    @endif
+                </div>
+
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="w-10 h-10 rounded-full bg-white/30 backdrop-blur-md border border-white/50 flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition">
+                        <svg class="w-4 h-4 fill-current ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-2 left-2 right-2 pointer-events-none space-y-0.5">
+                    <p class="text-white font-bold text-xs line-clamp-1 drop-shadow-md">{{ $rProd->name }}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-white font-black text-xs drop-shadow-md">₹{{ number_format($rPrice) }}</span>
+                        <span class="text-[9px] font-bold text-emerald-300 bg-emerald-950/70 px-1 py-0.2 rounded backdrop-blur-sm">💬 Buy</span>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
     <!-- Live Catalogue Grid Section -->
     <main class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 mt-5 sm:mt-8">
         
@@ -617,8 +694,164 @@
             document.getElementById('modal-quickview').classList.add('hidden');
         }
 
+        
+        // Reels Data & Player Logic
+        const REELS_DATA = [
+            @foreach($reels as $rp)
+            {
+                id: {{ $rp->id }},
+                name: "{{ addslashes($rp->name) }}",
+                category: "{{ addslashes($rp->category->name ?? 'Collection') }}",
+                price: {{ $rp->selling_price }},
+                origPrice: {{ $rp->price }},
+                videoUrl: "{{ $rp->video_url }}",
+                embedUrl: "{{ $rp->video_embed_url }}",
+                img: "{{ !empty($rp->images) && count($rp->images) > 0 ? $rp->images[0]->url : '' }}"
+            },
+            @endforeach
+        ];
+
+        let currentReelIndex = 0;
+
+        function openReelModal(index) {
+            if (!REELS_DATA || REELS_DATA.length === 0) return;
+            currentReelIndex = (index >= 0 && index < REELS_DATA.length) ? index : 0;
+            renderCurrentReel();
+            document.getElementById('reel-modal').classList.remove('hidden');
+        }
+
+        function closeReelModal() {
+            const container = document.getElementById('reel-video-container');
+            container.innerHTML = '';
+            document.getElementById('reel-modal').classList.add('hidden');
+        }
+
+        function nextReel() {
+            if (currentReelIndex < REELS_DATA.length - 1) {
+                currentReelIndex++;
+            } else {
+                currentReelIndex = 0;
+            }
+            renderCurrentReel();
+        }
+
+        function prevReel() {
+            if (currentReelIndex > 0) {
+                currentReelIndex--;
+            } else {
+                currentReelIndex = REELS_DATA.length - 1;
+            }
+            renderCurrentReel();
+        }
+
+        function renderCurrentReel() {
+            const reel = REELS_DATA[currentReelIndex];
+            if (!reel) return;
+
+            document.getElementById('reel-cat').innerText = reel.category.toUpperCase();
+            document.getElementById('reel-title').innerText = reel.name;
+            document.getElementById('reel-price').innerText = '₹' + Number(reel.price).toLocaleString('en-IN');
+            
+            const origEl = document.getElementById('reel-orig');
+            if (reel.origPrice && reel.origPrice > reel.price) {
+                origEl.innerText = '₹' + Number(reel.origPrice).toLocaleString('en-IN');
+                origEl.classList.remove('hidden');
+            } else {
+                origEl.classList.add('hidden');
+            }
+
+            document.getElementById('reel-bag-btn').onclick = () => {
+                addToCustomerBag(reel.id, reel.name, reel.price, reel.img);
+                closeReelModal();
+            };
+            document.getElementById('reel-buy-btn').onclick = () => {
+                orderSingleWhatsApp(reel.name, reel.price);
+                closeReelModal();
+            };
+
+            const container = document.getElementById('reel-video-container');
+            const embed = reel.embedUrl || reel.videoUrl;
+
+            if (embed.includes('youtube.com/embed/')) {
+                container.innerHTML = `<iframe src="${embed}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else if (embed.includes('instagram.com/reel/')) {
+                container.innerHTML = `<iframe src="${embed}" class="w-full h-full border-0" allowtransparency="true" frameborder="0" scrolling="no"></iframe>`;
+            } else {
+                container.innerHTML = `<video src="${embed}" class="w-full h-full object-contain" autoplay playsinline loop controls></video>`;
+            }
+        }
+
         // Init
         updateBagDisplay();
     </script>
+    <!-- Fullscreen Reel Modal Player -->
+    <div id="reel-modal" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex items-center justify-center p-0 sm:p-4">
+        <div onclick="closeReelModal()" class="absolute inset-0 z-0"></div>
+
+        <div class="relative z-10 w-full sm:max-w-md h-full sm:h-[90vh] bg-black sm:rounded-3xl overflow-hidden flex flex-col justify-between shadow-2xl border sm:border-slate-800">
+            <!-- Top Controls -->
+            <div class="absolute top-0 inset-x-0 z-20 p-4 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center text-white font-bold text-xs">
+                        🎬
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-white block drop-shadow">{{ $business->name }}</span>
+                        <span class="text-[10px] text-rose-300 font-semibold uppercase tracking-wider">Product Reel Demo</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <button onclick="closeReelModal()" class="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-lg font-bold border border-white/20 hover:bg-black/80 transition">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Video Frame Container -->
+            <div id="reel-video-container" class="w-full h-full flex items-center justify-center bg-black relative">
+                <!-- Video / Iframe injected dynamically -->
+            </div>
+
+            <!-- Bottom Info & CTA -->
+            <div class="absolute bottom-0 inset-x-0 z-20 p-4 bg-gradient-to-t from-black via-black/80 to-transparent space-y-3">
+                <div class="flex items-end justify-between gap-3">
+                    <div class="space-y-1">
+                        <span id="reel-cat" class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">
+                            COLLECTION
+                        </span>
+                        <h4 id="reel-title" class="text-white font-black text-base sm:text-lg drop-shadow-md">
+                            Product
+                        </h4>
+                        <div class="flex items-baseline gap-2">
+                            <span id="reel-price" class="text-white text-xl sm:text-2xl font-black drop-shadow-md">
+                                ₹0
+                            </span>
+                            <span id="reel-orig" class="text-xs text-gray-400 line-through"></span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 flex-shrink-0">
+                        <button onclick="prevReel()" class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center text-xs backdrop-blur-md hover:bg-white/40 transition">
+                            ▲
+                        </button>
+                        <button onclick="nextReel()" class="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center text-xs backdrop-blur-md hover:bg-white/40 transition">
+                            ▼
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button id="reel-bag-btn" class="py-3 rounded-2xl bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-black text-xs transition flex items-center justify-center gap-1.5 border border-white/30">
+                        <span>🛒 Add to Bag</span>
+                    </button>
+                    <button id="reel-buy-btn" class="py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs shadow-lg shadow-emerald-500/30 transition flex items-center justify-center gap-1.5">
+                        <span>💬 WhatsApp Buy</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
