@@ -62,7 +62,7 @@
                 
                 <!-- Logo & Badges -->
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group">
+                    <a href="/admin" class="flex items-center gap-3 group">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center font-black text-xl text-white shadow-lg shadow-indigo-500/25 group-hover:scale-105 transition">
                             S
                         </div>
@@ -78,7 +78,7 @@
 
                 <!-- Global Range Filters & Quick Links -->
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                    <form method="GET" action="/admin" class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
                         <input type="hidden" name="tab" value="{{ $tab }}">
                         @if($search)<input type="hidden" name="search" value="{{ $search }}">@endif
                         @if($statusFilter)<input type="hidden" name="status" value="{{ $statusFilter }}">@endif
@@ -101,31 +101,31 @@
         <!-- Navigation Tabs -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-800/50">
             <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto py-2.5 scrollbar-none" aria-label="Tabs">
-                <a href="{{ route('admin.dashboard', ['tab' => 'overview', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'overview' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=overview&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'overview' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>📊 Overview & Funnel</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'shops', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'shops' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=shops&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'shops' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>🏪 Shops Directory</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $tab === 'shops' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400' }}">{{ $totalShops }}</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'owners', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'owners' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=owners&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'owners' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>👥 Shop Owners & Users</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $tab === 'owners' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400' }}">{{ $totalUsers }}</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'products', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=products&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'products' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>📦 Products Catalog</span>
                     <span class="px-1.5 py-0.2 rounded-full text-[10px] {{ $tab === 'products' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400' }}">{{ $totalProducts }}</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'customers', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'customers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=customers&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'customers' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>🎯 Customer Leads</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'orders', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'orders' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=orders&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'orders' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>🛍️ Orders & Inquiries</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'categories', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'categories' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=categories&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'categories' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>🏷️ Categories & Locations</span>
                 </a>
-                <a href="{{ route('admin.dashboard', ['tab' => 'activity', 'days' => $days]) }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'activity' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
+                <a href="/admin?tab=activity&days={{ $days }}" class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition {{ $tab === 'activity' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900' }}">
                     <span>⚡ Live Stream & Audit</span>
                 </a>
             </nav>
@@ -196,10 +196,10 @@
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        <a href="{{ route('admin.dashboard', ['tab' => 'shops']) }}" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition">
+                        <a href="/admin?tab=shops" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-indigo-600/30 transition">
                             Manage Shops ({{ $totalShops }}) →
                         </a>
-                        <a href="{{ route('admin.dashboard', ['tab' => 'orders']) }}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-700 transition">
+                        <a href="/admin?tab=orders" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm border border-slate-700 transition">
                             View Orders ({{ $totalOrders }})
                         </a>
                     </div>
@@ -399,7 +399,7 @@
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
                             Real-time Activity Stream
                         </h3>
-                        <a href="{{ route('admin.dashboard', ['tab' => 'activity']) }}" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">View All →</a>
+                        <a href="/admin?tab=activity" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">View All →</a>
                     </div>
                     <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                         @forelse($recentActivity as $event)
@@ -444,7 +444,7 @@
                             <span>🛡️</span>
                             Recent Admin Actions Log
                         </h3>
-                        <a href="{{ route('admin.dashboard', ['tab' => 'activity']) }}" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">View All →</a>
+                        <a href="/admin?tab=activity" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold">View All →</a>
                     </div>
                     <div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
                         @forelse($auditLogs as $log)
@@ -483,7 +483,7 @@
                     </div>
 
                     <!-- Search & Filters -->
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap items-center gap-2">
+                    <form method="GET" action="/admin" class="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="tab" value="shops">
                         <input type="hidden" name="days" value="{{ $days }}">
                         
@@ -501,7 +501,7 @@
 
                         <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">Search</button>
                         @if($search || $statusFilter)
-                            <a href="{{ route('admin.dashboard', ['tab' => 'shops', 'days' => $days]) }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
+                            <a href="/admin?tab=shops&days={{ $days }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
                         @endif
                     </form>
                 </div>
@@ -592,7 +592,7 @@
                                         <div class="flex items-center justify-end gap-1.5">
                                             
                                             <!-- Verify Toggle Form -->
-                                            <form method="POST" action="{{ route('admin.shops.verify', $shop->id) }}">
+                                            <form method="POST" action="/admin/shops/{{ $shop->id }}/verify">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $shop->is_verified ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/40' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white' }}" title="{{ $shop->is_verified ? 'Remove verification' : 'Verify shop' }}">
                                                     {{ $shop->is_verified ? '✓ Verified' : '+ Verify' }}
@@ -600,7 +600,7 @@
                                             </form>
 
                                             <!-- Feature Toggle Form -->
-                                            <form method="POST" action="{{ route('admin.shops.feature', $shop->id) }}">
+                                            <form method="POST" action="/admin/shops/{{ $shop->id }}/feature">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $shop->is_featured ? 'bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600/40' : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white' }}" title="{{ $shop->is_featured ? 'Remove featured' : 'Feature shop' }}">
                                                     {{ $shop->is_featured ? '★ Featured' : '☆ Feature' }}
@@ -608,7 +608,7 @@
                                             </form>
 
                                             <!-- Suspend / Activate Form -->
-                                            <form method="POST" action="{{ route('admin.shops.toggle-active', $shop->id) }}">
+                                            <form method="POST" action="/admin/shops/{{ $shop->id }}/toggle-active">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $shop->is_active ? 'bg-rose-600/20 text-rose-300 border border-rose-500/40 hover:bg-rose-600/40' : 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/40' }}">
                                                     {{ $shop->is_active ? 'Suspend' : 'Activate' }}
@@ -654,7 +654,7 @@
                     </div>
 
                     <!-- Search & Filters -->
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap items-center gap-2">
+                    <form method="GET" action="/admin" class="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="tab" value="owners">
                         <input type="hidden" name="days" value="{{ $days }}">
                         
@@ -670,7 +670,7 @@
 
                         <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">Search</button>
                         @if($search || $statusFilter)
-                            <a href="{{ route('admin.dashboard', ['tab' => 'owners', 'days' => $days]) }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
+                            <a href="/admin?tab=owners&days={{ $days }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
                         @endif
                     </form>
                 </div>
@@ -761,7 +761,7 @@
                                         <div class="flex items-center justify-end gap-1.5 flex-wrap">
                                             
                                             <!-- Extend Trial Dropdown Form -->
-                                            <form method="POST" action="{{ route('admin.users.extend-trial', $user->id) }}" class="inline-flex items-center gap-1">
+                                            <form method="POST" action="/admin/users/{{ $user->id }}/extend-trial" class="inline-flex items-center gap-1">
                                                 @csrf
                                                 <input type="hidden" name="days" value="30">
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-600/40 transition" title="Add 30 days trial">
@@ -771,14 +771,14 @@
 
                                             <!-- Activate / Block Form -->
                                             @if($user->is_active)
-                                                <form method="POST" action="{{ route('admin.users.block', $user->id) }}">
+                                                <form method="POST" action="/admin/users/{{ $user->id }}/block">
                                                     @csrf
                                                     <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-600/20 text-rose-300 border border-rose-500/40 hover:bg-rose-600/40 transition">
                                                         Block
                                                     </button>
                                                 </form>
                                             @else
-                                                <form method="POST" action="{{ route('admin.users.activate', $user->id) }}">
+                                                <form method="POST" action="/admin/users/{{ $user->id }}/activate">
                                                     @csrf
                                                     <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/40 transition">
                                                         Activate
@@ -825,7 +825,7 @@
                     </div>
 
                     <!-- Search & Filters -->
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap items-center gap-2">
+                    <form method="GET" action="/admin" class="flex flex-wrap items-center gap-2">
                         <input type="hidden" name="tab" value="products">
                         <input type="hidden" name="days" value="{{ $days }}">
                         
@@ -839,7 +839,7 @@
 
                         <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">Search</button>
                         @if($search || $statusFilter)
-                            <a href="{{ route('admin.dashboard', ['tab' => 'products', 'days' => $days]) }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
+                            <a href="/admin?tab=products&days={{ $days }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
                         @endif
                     </form>
                 </div>
@@ -915,7 +915,7 @@
                                         <div class="flex items-center justify-end gap-1.5">
                                             
                                             <!-- Toggle Stock Form -->
-                                            <form method="POST" action="{{ route('admin.products.toggle-stock', $product->id) }}">
+                                            <form method="POST" action="/admin/products/{{ $product->id }}/toggle-stock">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $product->in_stock ? 'bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600/40' : 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/40' }}">
                                                     {{ $product->in_stock ? 'Mark Out of Stock' : 'Mark In Stock' }}
@@ -923,7 +923,7 @@
                                             </form>
 
                                             <!-- Delete Product Form -->
-                                            <form method="POST" action="{{ route('admin.products.delete', $product->id) }}" onsubmit="return confirm('Are you sure you want to delete this product?');">
+                                            <form method="POST" action="/admin/products/{{ $product->id }}/delete" onsubmit="return confirm('Are you sure you want to delete this product?');">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-600/20 text-rose-300 border border-rose-500/40 hover:bg-rose-600/40 transition">
                                                     Delete
@@ -969,14 +969,14 @@
                     </div>
 
                     <!-- Search Form -->
-                    <form method="GET" action="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
+                    <form method="GET" action="/admin" class="flex items-center gap-2">
                         <input type="hidden" name="tab" value="customers">
                         <input type="hidden" name="days" value="{{ $days }}">
                         
                         <input type="text" name="search" value="{{ $search }}" placeholder="Search customer name, phone, email..." class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-64">
                         <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition">Search</button>
                         @if($search)
-                            <a href="{{ route('admin.dashboard', ['tab' => 'customers', 'days' => $days]) }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
+                            <a href="/admin?tab=customers&days={{ $days }}" class="px-2.5 py-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs">Reset</a>
                         @endif
                     </form>
                 </div>
@@ -1085,7 +1085,7 @@
                         </div>
 
                         <!-- Orders Search & Filter -->
-                        <form method="GET" action="{{ route('admin.dashboard') }}" class="flex flex-wrap items-center gap-2">
+                        <form method="GET" action="/admin" class="flex flex-wrap items-center gap-2">
                             <input type="hidden" name="tab" value="orders">
                             <input type="hidden" name="days" value="{{ $days }}">
                             
@@ -1162,7 +1162,7 @@
 
                                         <!-- Actions: Status Select -->
                                         <td class="p-3.5 text-right">
-                                            <form method="POST" action="{{ route('admin.orders.status', $order->id) }}" class="inline-flex items-center gap-1.5">
+                                            <form method="POST" action="/admin/orders/{{ $order->id }}/status" class="inline-flex items-center gap-1.5">
                                                 @csrf
                                                 <select name="status" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
                                                     <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -1236,7 +1236,7 @@
                                             @endif
                                         </td>
                                         <td class="p-3.5 text-right">
-                                            <form method="POST" action="{{ route('admin.inquiries.handled', $inquiry->id) }}">
+                                            <form method="POST" action="/admin/inquiries/{{ $inquiry->id }}/handled">
                                                 @csrf
                                                 <button type="submit" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition {{ $inquiry->status === 'handled' ? 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-white' : 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/40' }}">
                                                     {{ $inquiry->status === 'handled' ? 'Mark Pending' : '✓ Mark Handled' }}
@@ -1281,7 +1281,7 @@
                             <p class="text-xs text-slate-400">Organize showrooms into searchable industry classifications</p>
                         </div>
 
-                        <form method="POST" action="{{ route('admin.categories.store') }}" class="space-y-3">
+                        <form method="POST" action="/admin/categories/store" class="space-y-3">
                             @csrf
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
@@ -1342,7 +1342,7 @@
                                         </div>
                                     </div>
 
-                                    <form method="POST" action="{{ route('admin.categories.delete', $cat->id) }}" onsubmit="return confirm('Delete category {{ $cat->name }}?');">
+                                    <form method="POST" action="/admin/categories/{{ $cat->id }}/delete" onsubmit="return confirm('Delete category {{ $cat->name }}?');">
                                         @csrf
                                         <button type="submit" class="w-8 h-8 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/40 flex items-center justify-center font-bold text-xs border border-rose-500/30 transition" title="Delete category">
                                             ✕
@@ -1367,7 +1367,7 @@
                             <p class="text-xs text-slate-400">Expand local discovery coverage for cities and commercial hubs</p>
                         </div>
 
-                        <form method="POST" action="{{ route('admin.locations.store') }}" class="space-y-3">
+                        <form method="POST" action="/admin/locations/store" class="space-y-3">
                             @csrf
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
@@ -1421,7 +1421,7 @@
                                         </div>
                                     </div>
 
-                                    <form method="POST" action="{{ route('admin.locations.delete', $loc->id) }}" onsubmit="return confirm('Delete location {{ $loc->name }}?');">
+                                    <form method="POST" action="/admin/locations/{{ $loc->id }}/delete" onsubmit="return confirm('Delete location {{ $loc->name }}?');">
                                         @csrf
                                         <button type="submit" class="w-8 h-8 rounded-lg bg-rose-600/20 text-rose-300 hover:bg-rose-600/40 flex items-center justify-center font-bold text-xs border border-rose-500/30 transition" title="Delete location">
                                             ✕

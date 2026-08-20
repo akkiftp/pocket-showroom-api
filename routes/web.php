@@ -4,6 +4,11 @@ use App\Http\Controllers\WebShowroomController;
 use App\Http\Controllers\Api\ShareController;
 use App\Http\Controllers\WebAdminController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
+
+if (app()->environment('production') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'onrender.com'))) {
+    URL::forceScheme('https');
+}
 
 Route::get('/', function () {
     return response()->json(['message' => 'Pocket Showroom API is running']);
