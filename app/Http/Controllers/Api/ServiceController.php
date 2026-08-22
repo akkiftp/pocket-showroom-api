@@ -1,13 +1,139 @@
 <?php
 namespace App\Http\Controllers\Api;
-use App\Http\Controllers\Controller; use App\Models\Service; use App\Models\ServiceBooking; use App\Models\Business; use App\Services\BusinessContext; use App\Services\MediaStorage; use Illuminate\Http\Request; use Illuminate\Support\Str;
-class ServiceController extends Controller {
- public function publicIndex(Request $r){$q=Service::query()->where('is_active',true)->with('business:id,name,slug,logo_path,city,locality,latitude,longitude,service_radius_km'); if($r->filled('business_id'))$q->where('business_id',$r->integer('business_id')); if($r->filled('city'))$q->whereHas('business',fn($x)=>$x->where('city','like','%'.trim($r->city).'%')->where('is_active',true)); if($r->filled('search')){$s=trim($r->search);$q->where(fn($x)=>$x->where('name','like',"%$s%")->orWhere('description','like',"%$s%"));} return $q->latest('id')->paginate(min(max($r->integer('per_page',20),1),50));}
- public function index(Request $r){$b=BusinessContext::require($r); return $b->services()->latest('id')->paginate(min(max($r->integer('per_page',20),1),100));}
- public function store(Request $r,MediaStorage $media){$b=BusinessContext::require($r);$d=$r->validate(['name'=>'required|string|max:180','description'=>'nullable|string|max:5000','price'=>'nullable|numeric|min:0','price_type'=>'nullable|in:fixed,starting_from,per_hour,quote','duration_minutes'=>'nullable|integer|min:1','home_service'=>'nullable|boolean','at_shop'=>'nullable|boolean','is_active'=>'nullable|boolean','image'=>'nullable|image|max:8192']);$slug=Str::slug($d['name'])?:'service';$base=$slug;$i=2;while(Service::withTrashed()->where('business_id',$b->id)->where('slug',$slug)->exists())$slug=$base.'-'.$i++; unset($d['image']); if($r->hasFile('image'))$d['image_url']=$media->uploadImage($r->file('image'),'services/'.$b->id);$d['slug']=$slug;$s=$b->services()->create($d);return response()->json(['success'=>true,'service'=>$s],201);}
- public function update(Request $r,Service $service,MediaStorage $media){$b=BusinessContext::require($r);abort_unless($service->business_id===$b->id,404);$d=$r->validate(['name'=>'sometimes|required|string|max:180','description'=>'nullable|string|max:5000','price'=>'nullable|numeric|min:0','price_type'=>'nullable|in:fixed,starting_from,per_hour,quote','duration_minutes'=>'nullable|integer|min:1','home_service'=>'nullable|boolean','at_shop'=>'nullable|boolean','is_active'=>'nullable|boolean','image'=>'nullable|image|max:8192']);unset($d['image']);if($r->hasFile('image')){$media->delete($service->image_url);$d['image_url']=$media->uploadImage($r->file('image'),'services/'.$b->id);} $service->update($d);return ['success'=>true,'service'=>$service->fresh()];}
- public function destroy(Request $r,Service $service){$b=BusinessContext::require($r);abort_unless($service->business_id===$b->id,404);$service->delete();return ['success'=>true];}
- public function book(Request $r,Service $service){abort_unless($service->is_active,404);$d=$r->validate(['customer_name'=>'required|string|max:150','customer_phone'=>'required|string|max:25','customer_email'=>'nullable|email','address'=>'required|string|max:1500','city'=>'nullable|string|max:100','locality'=>'nullable|string|max:150','pincode'=>'nullable|string|max:12','latitude'=>'nullable|numeric|between:-90,90','longitude'=>'nullable|numeric|between:-180,180','booking_date'=>'required|date|after_or_equal:today','booking_time'=>'nullable|date_format:H:i','problem_description'=>'nullable|string|max:3000']);$d['business_id']=$service->business_id;$d['service_id']=$service->id;$d['user_id']=$r->user()?->id;$booking=ServiceBooking::create($d);return response()->json(['success'=>true,'message'=>'Service booking request sent.','booking'=>$booking],201);}
- public function bookings(Request $r){$b=BusinessContext::require($r);$q=ServiceBooking::where('business_id',$b->id)->with('service:id,name');if($r->filled('status'))$q->where('status',$r->status);return $q->latest('id')->paginate(30);}
- public function bookingStatus(Request $r,ServiceBooking $booking){$b=BusinessContext::require($r);abort_unless($booking->business_id===$b->id,404);$d=$r->validate(['status'=>'required|in:pending,accepted,on_the_way,started,completed,cancelled','quoted_amount'=>'nullable|numeric|min:0','business_notes'=>'nullable|string|max:3000']);$booking->update($d);return ['success'=>true,'booking'=>$booking->fresh('service:id,name')];}
+
+use App\Http\Controllers\Controller;
+use App\Models\Service;
+use App\Models\ServiceBooking;
+use App\Services\BusinessContext;
+use App\Services\MediaStorage;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+class ServiceController extends Controller
+{
+    public function publicIndex(Request $r)
+    {
+        $q = Service::query()->where('is_active', true)->with('business:id,name,slug,logo_path,city,locality,latitude,longitude,service_radius_km,phone,whatsapp');
+        if ($r->filled('business_id')) $q->where('business_id', $r->integer('business_id'));
+        if ($r->filled('city')) $q->whereHas('business', fn($x) => $x->where('city', 'like', '%' . trim($r->city) . '%')->where('is_active', true));
+        if ($r->filled('search')) {
+            $s = trim($r->search);
+            $q->where(fn($x) => $x->where('name', 'like', "%$s%")->orWhere('description', 'like', "%$s%"));
+        }
+        return $q->latest('id')->paginate(min(max($r->integer('per_page', 20), 1), 50));
+    }
+
+    public function index(Request $r)
+    {
+        $b = BusinessContext::require($r);
+        return $b->services()->latest('id')->paginate(min(max($r->integer('per_page', 20), 1), 100));
+    }
+
+    public function store(Request $r, MediaStorage $media)
+    {
+        $b = BusinessContext::require($r);
+        $d = $r->validate([
+            'name' => 'required|string|max:180',
+            'description' => 'nullable|string|max:5000',
+            'price' => 'nullable|numeric|min:0',
+            'price_type' => 'nullable|in:fixed,starting_from,per_hour,quote',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'home_service' => 'nullable|boolean',
+            'at_shop' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|max:8192',
+            'image_url' => 'nullable|url|max:700',
+        ]);
+        $slug = Str::slug($d['name']) ?: 'service';
+        $base = $slug;
+        $i = 2;
+        while (Service::withTrashed()->where('business_id', $b->id)->where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i++;
+        }
+        unset($d['image']);
+        if ($r->hasFile('image')) {
+            $d['image_url'] = $media->uploadImage($r->file('image'), 'services/' . $b->id);
+        }
+        $d['slug'] = $slug;
+        $s = $b->services()->create($d);
+        return response()->json(['success' => true, 'service' => $s], 201);
+    }
+
+    public function update(Request $r, Service $service, MediaStorage $media)
+    {
+        $b = BusinessContext::require($r);
+        abort_unless($service->business_id === $b->id, 404);
+        $d = $r->validate([
+            'name' => 'sometimes|required|string|max:180',
+            'description' => 'nullable|string|max:5000',
+            'price' => 'nullable|numeric|min:0',
+            'price_type' => 'nullable|in:fixed,starting_from,per_hour,quote',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'home_service' => 'nullable|boolean',
+            'at_shop' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|max:8192',
+            'image_url' => 'nullable|url|max:700',
+        ]);
+        unset($d['image']);
+        if ($r->hasFile('image')) {
+            $media->delete($service->image_url);
+            $d['image_url'] = $media->uploadImage($r->file('image'), 'services/' . $b->id);
+        }
+        $service->update($d);
+        return ['success' => true, 'service' => $service->fresh()];
+    }
+
+    public function destroy(Request $r, Service $service)
+    {
+        $b = BusinessContext::require($r);
+        abort_unless($service->business_id === $b->id, 404);
+        $service->delete();
+        return ['success' => true];
+    }
+
+    public function book(Request $r, Service $service)
+    {
+        abort_unless($service->is_active, 404);
+        $d = $r->validate([
+            'customer_name' => 'required|string|max:150',
+            'customer_phone' => 'required|string|max:25',
+            'customer_email' => 'nullable|email',
+            'address' => 'required|string|max:1500',
+            'city' => 'nullable|string|max:100',
+            'locality' => 'nullable|string|max:150',
+            'pincode' => 'nullable|string|max:12',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+            'booking_date' => 'required|date|after_or_equal:today',
+            'booking_time' => 'nullable|string|max:20',
+            'problem_description' => 'nullable|string|max:3000',
+        ]);
+        $d['business_id'] = $service->business_id;
+        $d['service_id'] = $service->id;
+        $d['user_id'] = $r->user()?->id;
+        $booking = ServiceBooking::create($d);
+        return response()->json(['success' => true, 'message' => 'Service booking request sent.', 'booking' => $booking], 201);
+    }
+
+    public function bookings(Request $r)
+    {
+        $b = BusinessContext::require($r);
+        $q = ServiceBooking::where('business_id', $b->id)->with('service:id,name,image_url,price,price_type');
+        if ($r->filled('status')) $q->where('status', $r->status);
+        return $q->latest('id')->paginate(30);
+    }
+
+    public function bookingStatus(Request $r, ServiceBooking $booking)
+    {
+        $b = BusinessContext::require($r);
+        abort_unless($booking->business_id === $b->id, 404);
+        $d = $r->validate([
+            'status' => 'required|in:pending,accepted,assigned,on_the_way,work_started,started,completed,cancelled',
+            'quoted_amount' => 'nullable|numeric|min:0',
+            'business_notes' => 'nullable|string|max:3000',
+        ]);
+        $booking->update($d);
+        return ['success' => true, 'booking' => $booking->fresh('service:id,name,image_url,price,price_type')];
+    }
 }

@@ -164,8 +164,10 @@ Route::middleware('auth:sanctum')->group(function(){
     // Owner: travel
     Route::get('/owner/travel/vehicles',[TravelController::class,'vehicles']);
     Route::post('/owner/travel/vehicles',[TravelController::class,'storeVehicle']);
+    Route::delete('/owner/travel/vehicles/{vehicle}',[TravelController::class,'destroyVehicle']);
     Route::get('/owner/travel/routes',[TravelController::class,'routes']);
     Route::post('/owner/travel/routes',[TravelController::class,'storeRoute']);
+    Route::delete('/owner/travel/routes/{route}',[TravelController::class,'destroyRoute']);
     Route::get('/owner/travel/bookings',[TravelController::class,'bookings']);
     Route::patch('/owner/travel/bookings/{booking}/status',[TravelController::class,'status']);
 });
