@@ -1,0 +1,2 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Model; class TravelRoute extends Model { protected $fillable=['business_id','vehicle_id','from_city','to_city','departure_time','arrival_time','fare','days_of_week','is_active']; protected $casts=['fare'=>'float','is_active'=>'boolean']; public function vehicle(){return $this->belongsTo(TravelVehicle::class,'vehicle_id');} public function business(){return $this->belongsTo(Business::class);} }

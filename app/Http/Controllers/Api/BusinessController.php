@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\BusinessContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Services\MediaStorage;
 use Illuminate\Support\Str;
 class BusinessController extends Controller
 {
@@ -25,12 +26,10 @@ class BusinessController extends Controller
     {
         abort_unless($request->user()->isShopOwner() || $request->user()->isSuperAdmin(), 403, 'Only a Shop Owner can create a showroom.');
         
-        $existing = Business::where('user_id', $request->user()->id)->first();
-        if ($existing) {
-            return $this->update($request);
-        }
+        // Multiple businesses per owner are supported. Existing clients can still update via PUT/PATCH /business.
         $data=$request->validate([
             'name'=>['required','string','max:150'],'business_type'=>['nullable','string','max:100'],
+            'business_mode'=>['nullable','in:product,service,travel,product_service'],'service_mode'=>['nullable','in:at_shop,home,both'],'service_radius_km'=>['nullable','numeric','min:0','max:500'],
             'marketplace_category_id'=>['nullable','integer','exists:marketplace_categories,id'],
             'city'=>['nullable','string','max:100'],'location_id'=>['nullable','integer','exists:marketplace_locations,id'],
             'locality'=>['nullable','string','max:150'],'pincode'=>['nullable','string','max:12'],
@@ -51,13 +50,14 @@ class BusinessController extends Controller
         unset($data['logo'], $data['cover_image'], $data['banner']);
 
         $business=Business::create($data+['user_id'=>$request->user()->id,'slug'=>$slug]);
+        $business->members()->syncWithoutDetaching([$request->user()->id => ['role' => 'owner', 'is_active' => true]]);
 
         if ($logoFile) {
-            $path = $logoFile->store('businesses/'.$business->id, 'public');
+            $path = app(MediaStorage::class)->uploadImage($logoFile, 'businesses/'.$business->id);
             $business->update(['logo_path' => $path]);
         }
         if ($coverFile) {
-            $path = $coverFile->store('businesses/'.$business->id, 'public');
+            $path = app(MediaStorage::class)->uploadImage($coverFile, 'businesses/'.$business->id);
             $business->update(['banner_path' => $path]);
         }
 
@@ -82,6 +82,7 @@ class BusinessController extends Controller
         $business=$this->business($request);
         $data=$request->validate([
             'name'=>['sometimes','required','string','max:150'],'business_type'=>['nullable','string','max:100'],
+            'business_mode'=>['nullable','in:product,service,travel,product_service'],'service_mode'=>['nullable','in:at_shop,home,both'],'service_radius_km'=>['nullable','numeric','min:0','max:500'],
             'marketplace_category_id'=>['nullable','integer','exists:marketplace_categories,id'],
             'city'=>['nullable','string','max:100'],'location_id'=>['nullable','integer','exists:marketplace_locations,id'],
             'locality'=>['nullable','string','max:150'],'pincode'=>['nullable','string','max:12'],
@@ -104,12 +105,12 @@ class BusinessController extends Controller
 
         if ($logoFile) {
             if($business->logo_path && !Str::startsWith($business->logo_path,'http')) Storage::disk('public')->delete($business->logo_path);
-            $path = $logoFile->store('businesses/'.$business->id, 'public');
+            $path = app(MediaStorage::class)->uploadImage($logoFile, 'businesses/'.$business->id);
             $business->update(['logo_path' => $path]);
         }
         if ($coverFile) {
             if($business->banner_path && !Str::startsWith($business->banner_path,'http')) Storage::disk('public')->delete($business->banner_path);
-            $path = $coverFile->store('businesses/'.$business->id, 'public');
+            $path = app(MediaStorage::class)->uploadImage($coverFile, 'businesses/'.$business->id);
             $business->update(['banner_path' => $path]);
         }
 
@@ -133,7 +134,7 @@ class BusinessController extends Controller
         abort_unless($request->user()->canDo('business.update'),403); $business=$this->business($request);
         $request->validate([$field=>['required','image','max:8192']]);
         if($business->{$column} && !Str::startsWith($business->{$column},'http')) Storage::disk('public')->delete($business->{$column});
-        $path=$request->file($field)->store('businesses/'.$business->id,'public'); $business->update([$column=>$path]);
+        $path=app(MediaStorage::class)->uploadImage($request->file($field),'businesses/'.$business->id); $business->update([$column=>$path]);
         return response()->json(['message'=>ucfirst($field).' updated.','business'=>$business->fresh()]);
     }
     public function theme(Request $request){ abort_unless($request->user()->canDo('business.update'),403); $business=$this->business($request); $data=$request->validate(['theme_primary'=>['required','regex:/^#[0-9A-Fa-f]{6}$/'],'theme_secondary'=>['required','regex:/^#[0-9A-Fa-f]{6}$/']]); $business->update($data); return response()->json(['message'=>'Theme updated.','business'=>$business->fresh()]); }

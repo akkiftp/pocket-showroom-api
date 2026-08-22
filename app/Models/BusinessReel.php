@@ -1,0 +1,2 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Model; class BusinessReel extends Model { protected $fillable=['business_id','product_id','service_id','video_url','thumbnail_url','caption','duration_seconds','is_active','is_promoted','views_count','likes_count','shares_count']; protected $casts=['is_active'=>'boolean','is_promoted'=>'boolean']; public function business(){return $this->belongsTo(Business::class);} public function product(){return $this->belongsTo(Product::class);} public function service(){return $this->belongsTo(Service::class);} }

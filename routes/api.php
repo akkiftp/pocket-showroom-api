@@ -19,25 +19,13 @@ use App\Http\Controllers\Api\TrackingController;
 use App\Http\Controllers\Api\MarketplaceAdminController;
 use App\Http\Controllers\Api\ShareController;
 use App\Http\Controllers\Api\SuperAdminDashboardController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\ReelController;
+use App\Http\Controllers\Api\TravelController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', fn()=>response()->json(['ok'=>true,'service'=>'Showmora API','auth_mode'=>config('pocket_showroom.auth_driver'),'free_mode'=>(bool)config('pocket_showroom.free_mode'),'timestamp'=>now()->toIso8601String()]));
-Route::get('/system/migrate', function() {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $output = \Illuminate\Support\Facades\Artisan::output();
-        return response()->json([
-            'success' => true,
-            'message' => 'Migrations executed.',
-            'output' => $output,
-            'categories_count' => \App\Models\MarketplaceCategory::count(),
-            'shops_count' => \App\Models\Business::count(),
-            'products_count' => \App\Models\Product::count(),
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
+// SECURITY: migrations must only run from deployment/CLI, never from a public HTTP route.
 Route::prefix('auth')->group(fn()=>Route::post('/firebase-login',[AuthController::class,'firebaseLogin'])->middleware('throttle:10,1'));
 
 // Public tracking and share resolution
@@ -63,6 +51,14 @@ Route::prefix('public/showrooms/{slug}')->group(function(){
     Route::post('/inquiries',[PublicShowroomController::class,'inquiry'])->middleware('throttle:20,1');
     Route::post('/orders',[OrderController::class,'publicStore'])->middleware('throttle:20,1');
 });
+
+// Local services, reels and travel discovery.
+Route::get('/services', [ServiceController::class,'publicIndex']);
+Route::post('/services/{service}/book', [ServiceController::class,'book'])->middleware('throttle:20,1');
+Route::get('/reels', [ReelController::class,'feed']);
+Route::post('/reels/{reel}/view', [ReelController::class,'view'])->middleware('throttle:120,1');
+Route::get('/travel/search', [TravelController::class,'publicSearch']);
+Route::post('/travel/book', [TravelController::class,'book'])->middleware('throttle:20,1');
 
 Route::middleware('auth:sanctum')->group(function(){
     Route::get('/me',[AuthController::class,'me']);
@@ -151,4 +147,25 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/orders/{order}/status',[OrderController::class,'status'])->middleware('permission:orders.manage');
 
     Route::post('/ai/product-draft',[AiController::class,'productDraft'])->middleware('permission:ai.use');
+
+    // Owner: services/home-service bookings
+    Route::get('/owner/services',[ServiceController::class,'index']);
+    Route::post('/owner/services',[ServiceController::class,'store']);
+    Route::match(['put','patch','post'],'/owner/services/{service}',[ServiceController::class,'update']);
+    Route::delete('/owner/services/{service}',[ServiceController::class,'destroy']);
+    Route::get('/owner/service-bookings',[ServiceController::class,'bookings']);
+    Route::patch('/owner/service-bookings/{booking}/status',[ServiceController::class,'bookingStatus']);
+
+    // Owner: reels
+    Route::get('/owner/reels',[ReelController::class,'index']);
+    Route::post('/owner/reels',[ReelController::class,'store']);
+    Route::delete('/owner/reels/{reel}',[ReelController::class,'destroy']);
+
+    // Owner: travel
+    Route::get('/owner/travel/vehicles',[TravelController::class,'vehicles']);
+    Route::post('/owner/travel/vehicles',[TravelController::class,'storeVehicle']);
+    Route::get('/owner/travel/routes',[TravelController::class,'routes']);
+    Route::post('/owner/travel/routes',[TravelController::class,'storeRoute']);
+    Route::get('/owner/travel/bookings',[TravelController::class,'bookings']);
+    Route::patch('/owner/travel/bookings/{booking}/status',[TravelController::class,'status']);
 });

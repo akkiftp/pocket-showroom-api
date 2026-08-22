@@ -14,6 +14,9 @@ class Business extends Model
         'name',
         'slug',
         'business_type',
+        'business_mode',
+        'service_mode',
+        'service_radius_km',
         'marketplace_category_id',
         'city',
         'location_id',
@@ -49,6 +52,7 @@ class Business extends Model
         'is_featured' => 'boolean',
         'latitude' => 'float',
         'longitude' => 'float',
+        'service_radius_km' => 'float',
     ];
 
     protected $appends = [
@@ -57,6 +61,13 @@ class Business extends Model
         'cover_image_url',
         'showroom_url',
     ];
+
+    public function members() { return $this->belongsToMany(User::class, 'business_members')->withPivot(['role','is_active'])->withTimestamps(); }
+    public function marketplaceCategories() { return $this->belongsToMany(MarketplaceCategory::class, 'business_marketplace_category'); }
+    public function services() { return $this->hasMany(Service::class); }
+    public function reels() { return $this->hasMany(BusinessReel::class); }
+    public function travelVehicles() { return $this->hasMany(TravelVehicle::class); }
+    public function travelRoutes() { return $this->hasMany(TravelRoute::class); }
 
     public function user()
     {

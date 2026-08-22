@@ -1,0 +1,2 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Model; class TravelVehicle extends Model { protected $fillable=['business_id','name','vehicle_type','registration_number','seats','ac','price_per_km','price_per_day','image_url','is_active']; protected $casts=['ac'=>'boolean','is_active'=>'boolean','price_per_km'=>'float','price_per_day'=>'float']; public function business(){return $this->belongsTo(Business::class);} }

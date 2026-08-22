@@ -1,0 +1,2 @@
+<?php
+namespace App\Models; use Illuminate\Database\Eloquent\Model; use Illuminate\Database\Eloquent\SoftDeletes; class Service extends Model { use SoftDeletes; protected $fillable=['business_id','name','slug','description','price','price_type','duration_minutes','image_url','home_service','at_shop','is_active','sort_order']; protected $casts=['price'=>'float','home_service'=>'boolean','at_shop'=>'boolean','is_active'=>'boolean']; public function business(){return $this->belongsTo(Business::class);} }

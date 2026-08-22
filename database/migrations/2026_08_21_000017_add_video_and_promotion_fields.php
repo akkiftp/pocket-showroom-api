@@ -23,7 +23,7 @@ return new class extends Migration
 
         Schema::table('businesses', function (Blueprint $table) {
             if (!Schema::hasColumn('businesses', 'promo_video_url')) {
-                $table->string('promo_video_url', 500)->nullable()->after('description');
+                $table->string('promo_video_url', 500)->nullable()->after('about');
             }
         });
 

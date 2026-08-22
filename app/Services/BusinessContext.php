@@ -21,7 +21,11 @@ class BusinessContext
             return $user->business_id ? Business::query()->find($user->business_id) : null;
         }
 
-        return Business::query()->where('user_id', $user->id)->first();
+        $query = Business::query()->where(function ($q) use ($user) {
+            $q->where('user_id', $user->id)->orWhereHas('members', fn($m) => $m->where('users.id', $user->id)->where('business_members.is_active', true));
+        });
+        if ($requestedBusinessId) $query->whereKey($requestedBusinessId);
+        return $query->first();
     }
 
     public static function require(Request $request): Business
